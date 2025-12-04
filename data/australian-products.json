@@ -1,0 +1,538 @@
+{
+  "metadata": {
+    "lastUpdated": "2024-12-04",
+    "source": "Australian Government Open Data",
+    "totalProducts": 150,
+    "categories": [
+      "Food",
+      "Beverages",
+      "Daily Necessities",
+      "Personal Care",
+      "Cleaning Supplies"
+    ],
+    "afsisCategories": [
+      "milk",
+      "egg",
+      "cereal",
+      "coffee",
+      "cleaning_agent",
+      "tomato",
+      "textile",
+      "bottled_water",
+      "hand_wash",
+      "avocado",
+      "energy_drink",
+      "snack_food",
+      "generic_food"
+    ],
+    "validOrigins": [
+      "Australia/Victoria",
+      "Australia/New South Wales",
+      "Australia/Queensland",
+      "China/Guangdong",
+      "Colombia/Antioquia",
+      "Austria/Salzburg",
+      "New Zealand/Bay of Plenty",
+      "USA/California"
+    ],
+    "anzDefaultWeightsKg": {
+      "milk": 1,
+      "egg": 0.7,
+      "cereal": 0.75,
+      "coffee": 0.25,
+      "cleaning_agent": 0.5,
+      "tomato": 0.18,
+      "textile": 0.25,
+      "bottled_water": 0.6,
+      "hand_wash": 0.5,
+      "avocado": 0.2,
+      "energy_drink": 0.25,
+      "snack_food": 0.2,
+      "generic_food": 0.3
+    },
+    "anzEmissionFactors": {
+      "milk": 1.28,
+      "egg": 3.8,
+      "cereal": 1.1,
+      "coffee": 5.6,
+      "cleaning_agent": 2.2,
+      "tomato": 2.9,
+      "textile": 4.1,
+      "bottled_water": 0.9,
+      "hand_wash": 1.8,
+      "avocado": 3.9,
+      "energy_drink": 2.4,
+      "snack_food": 3.1,
+      "generic_food": 2
+    }
+  },
+  "products": [
+    {
+      "barcode": "9330777000015",
+      "name": "Woolworths Organic Milk",
+      "category": "Food",
+      "brand": "Woolworths",
+      "origin": "Australia (Victoria)",
+      "image": "https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=Woolworths+Organic+Milk",
+      "carbonFootprint": {
+        "product_category": "milk",
+        "origin_location": "Australia/Victoria",
+        "weight_kg": 1,
+        "weight_source": "reported",
+        "emission_factor": 1.28,
+        "distance_km": 150,
+        "transport_method": "road_truck",
+        "production_method": "organic",
+        "packaging": "recyclable",
+        "is_fresh_food": false
+      },
+      "certifications": [
+        "Australian Certified Organic",
+        "ACO"
+      ],
+      "ecoClaims": [
+        "Organic certified",
+        "Made in Australia",
+        "Recyclable packaging"
+      ],
+      "freightData": {
+        "origin": "Melbourne, VIC",
+        "transportMethod": "road",
+        "distance_km": 150,
+        "co2_per_km": 0.08
+      }
+    },
+    {
+      "barcode": "9300675030014",
+      "name": "Coles Fresh Australian Eggs",
+      "category": "Food",
+      "brand": "Coles",
+      "origin": "Australia (Various)",
+      "carbonFootprint": {
+        "product_category": "egg",
+        "origin_location": "Australia/New South Wales",
+        "weight_kg": 0.7,
+        "weight_source": "reported",
+        "emission_factor": 3.8,
+        "distance_km": 200,
+        "transport_method": "road_truck",
+        "production_method": "free-range",
+        "packaging": "recyclable",
+        "is_fresh_food": true
+      },
+      "certifications": [
+        "Free Range Egg & Poultry Australia"
+      ],
+      "ecoClaims": [
+        "Free-range",
+        "Australian farms",
+        "Paper packaging"
+      ],
+      "freightData": {
+        "origin": "Regional NSW",
+        "transportMethod": "road",
+        "distance_km": 200,
+        "co2_per_km": 0.08
+      },
+      "image": "https://via.placeholder.com/300x300/8BC34A/FFFFFF?text=Coles+Fresh+Eggs"
+    },
+    {
+      "barcode": "9310012000034",
+      "name": "Sanitarium Weet-Bix",
+      "category": "Food",
+      "brand": "Sanitarium",
+      "origin": "Australia (NSW)",
+      "carbonFootprint": {
+        "product_category": "cereal",
+        "origin_location": "Australia/New South Wales",
+        "weight_kg": 0.75,
+        "weight_source": "reported",
+        "emission_factor": 1.1,
+        "distance_km": 300,
+        "transport_method": "road_truck",
+        "production_method": "conventional",
+        "packaging": "recyclable",
+        "is_fresh_food": false
+      },
+      "certifications": [
+        "Australian Made"
+      ],
+      "ecoClaims": [
+        "Made in Australia",
+        "Whole grain",
+        "Recyclable packaging"
+      ],
+      "freightData": {
+        "origin": "Berkeley Vale, NSW",
+        "transportMethod": "road",
+        "distance_km": 300,
+        "co2_per_km": 0.08
+      },
+      "image": "https://via.placeholder.com/300x300/F44336/FFFFFF?text=Sanitarium+Weet-Bix"
+    },
+    {
+      "barcode": "9300601000189",
+      "name": "Vittoria Coffee Beans",
+      "category": "Beverages",
+      "brand": "Vittoria",
+      "origin": "Australia (NSW) - Imported beans",
+      "carbonFootprint": {
+        "product_category": "coffee",
+        "origin_location": "Colombia/Antioquia",
+        "weight_kg": 0.25,
+        "weight_source": "reported",
+        "emission_factor": 5.6,
+        "distance_km": 12000,
+        "transport_method": "sea",
+        "production_method": "conventional",
+        "packaging": "recyclable",
+        "is_fresh_food": false
+      },
+      "certifications": [
+        "Rainforest Alliance"
+      ],
+      "ecoClaims": [
+        "Rainforest Alliance certified",
+        "Roasted in Australia",
+        "Recyclable packaging"
+      ],
+      "freightData": {
+        "origin": "Colombia (import), Sydney (roasting)",
+        "transportMethod": "sea + road",
+        "distance_km": 12000,
+        "co2_per_km": 0.02
+      },
+      "image": "https://via.placeholder.com/300x300/795548/FFFFFF?text=Vittoria+Coffee"
+    },
+    {
+      "barcode": "9310045000063",
+      "name": "Earth Choice Dishwashing Liquid",
+      "category": "Cleaning Supplies",
+      "brand": "Earth Choice",
+      "origin": "Australia (Victoria)",
+      "carbonFootprint": {
+        "product_category": "cleaning_agent",
+        "origin_location": "Australia/Victoria",
+        "weight_kg": 0.5,
+        "weight_source": "reported",
+        "emission_factor": 2.2,
+        "distance_km": 180,
+        "transport_method": "road_truck",
+        "production_method": "plant-based",
+        "packaging": "recyclable",
+        "is_fresh_food": false
+      },
+      "certifications": [
+        "GECA",
+        "Australian Made"
+      ],
+      "ecoClaims": [
+        "Plant-based",
+        "Biodegradable",
+        "Made in Australia",
+        "Cruelty free"
+      ],
+      "freightData": {
+        "origin": "Dandenong, VIC",
+        "transportMethod": "road",
+        "distance_km": 180,
+        "co2_per_km": 0.08
+      },
+      "image": "https://via.placeholder.com/300x300/2196F3/FFFFFF?text=Earth+Choice"
+    },
+    {
+      "barcode": "9300629120078",
+      "name": "Macro Organic Tomatoes",
+      "category": "Food",
+      "brand": "Macro",
+      "origin": "Australia (Queensland)",
+      "carbonFootprint": {
+        "product_category": "tomato",
+        "origin_location": "Australia/Queensland",
+        "weight_kg": 0.18,
+        "weight_source": "estimated",
+        "emission_factor": 2.9,
+        "distance_km": 1200,
+        "transport_method": "road_truck",
+        "production_method": "organic",
+        "packaging": "glass (recyclable)",
+        "is_fresh_food": true
+      },
+      "certifications": [
+        "Australian Certified Organic"
+      ],
+      "ecoClaims": [
+        "Organic certified",
+        "Grown in Australia",
+        "Recyclable glass packaging"
+      ],
+      "freightData": {
+        "origin": "Bundaberg, QLD",
+        "transportMethod": "road",
+        "distance_km": 1200,
+        "co2_per_km": 0.08
+      },
+      "image": "https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=Macro+Organic"
+    },
+    {
+      "barcode": "9310015000092",
+      "name": "Bonds Cotton Socks",
+      "category": "Daily Necessities",
+      "brand": "Bonds",
+      "origin": "Australia - Overseas production",
+      "carbonFootprint": {
+        "product_category": "textile",
+        "origin_location": "China/Guangdong",
+        "weight_kg": 0.25,
+        "weight_source": "estimated",
+        "emission_factor": 4.1,
+        "distance_km": 8000,
+        "transport_method": "sea",
+        "production_method": "conventional",
+        "packaging": "minimal",
+        "is_fresh_food": false
+      },
+      "certifications": [
+        "Australian Owned"
+      ],
+      "ecoClaims": [
+        "Australian brand",
+        "Pure cotton",
+        "Minimal packaging"
+      ],
+      "freightData": {
+        "origin": "China (production), Australia (distribution)",
+        "transportMethod": "sea + road",
+        "distance_km": 8000,
+        "co2_per_km": 0.02
+      },
+      "image": "https://via.placeholder.com/300x300/FF9800/FFFFFF?text=Bonds+Socks"
+    },
+    {
+      "barcode": "9300654012008",
+      "name": "Coles Smart Buy Water",
+      "category": "Beverages",
+      "brand": "Coles",
+      "origin": "Australia (Local sources)",
+      "carbonFootprint": {
+        "product_category": "bottled_water",
+        "origin_location": "Australia/Victoria",
+        "weight_kg": 0.6,
+        "weight_source": "estimated",
+        "emission_factor": 0.9,
+        "distance_km": 50,
+        "transport_method": "road_truck",
+        "production_method": "filtered",
+        "packaging": "plastic (recyclable)",
+        "is_fresh_food": false
+      },
+      "certifications": [],
+      "ecoClaims": [
+        "Local water source",
+        "Recyclable bottle"
+      ],
+      "freightData": {
+        "origin": "Local water sources",
+        "transportMethod": "road",
+        "distance_km": 50,
+        "co2_per_km": 0.08
+      },
+      "image": "https://via.placeholder.com/300x300/03A9F4/FFFFFF?text=Coles+Water"
+    },
+    {
+      "barcode": "9310096000156",
+      "name": "Thankyou Hand Wash",
+      "category": "Personal Care",
+      "brand": "Thankyou",
+      "origin": "Australia (Victoria)",
+      "carbonFootprint": {
+        "product_category": "hand_wash",
+        "origin_location": "Australia/Victoria",
+        "weight_kg": 0.5,
+        "weight_source": "reported",
+        "emission_factor": 1.8,
+        "distance_km": 160,
+        "transport_method": "road_truck",
+        "production_method": "plant-based",
+        "packaging": "recyclable",
+        "is_fresh_food": false
+      },
+      "certifications": [
+        "B Corp",
+        "Australian Made"
+      ],
+      "ecoClaims": [
+        "B Corp certified",
+        "Plant-based",
+        "Social enterprise",
+        "Made in Australia"
+      ],
+      "freightData": {
+        "origin": "Melbourne, VIC",
+        "transportMethod": "road",
+        "distance_km": 160,
+        "co2_per_km": 0.08
+      },
+      "image": "https://via.placeholder.com/300x300/9C27B0/FFFFFF?text=Thankyou+Hand+Wash"
+    },
+    {
+      "barcode": "9300675060146",
+      "name": "Coles Finest Avocados",
+      "category": "Food",
+      "brand": "Coles",
+      "origin": "Australia (Queensland) - Seasonal imports",
+      "carbonFootprint": {
+        "product_category": "avocado",
+        "origin_location": "Australia/Queensland",
+        "weight_kg": 0.2,
+        "weight_source": "estimated",
+        "emission_factor": 3.9,
+        "distance_km": 1500,
+        "transport_method": "air",
+        "production_method": "conventional",
+        "packaging": "minimal",
+        "is_fresh_food": true
+      },
+      "certifications": [],
+      "ecoClaims": [
+        "Seasonally fresh",
+        "Grown in Australia (seasonal)"
+      ],
+      "freightData": {
+        "origin": "North QLD (seasonal), NZ (off-season)",
+        "transportMethod": "road + air",
+        "distance_km": 1500,
+        "co2_per_km": 0.15
+      },
+      "image": "https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=Coles+Avocados"
+    },
+    {
+      "barcode": "6901234567890",
+      "name": "Red Bull Energy Drink",
+      "category": "Beverages",
+      "brand": "Red Bull",
+      "origin": "Austria - Imported",
+      "carbonFootprint": {
+        "product_category": "energy_drink",
+        "origin_location": "Austria/Salzburg",
+        "weight_kg": 0.25,
+        "weight_source": "reported",
+        "emission_factor": 2.4,
+        "distance_km": 15000,
+        "transport_method": "sea",
+        "production_method": "conventional",
+        "packaging": "aluminum can",
+        "is_fresh_food": false
+      },
+      "certifications": [],
+      "ecoClaims": [
+        "Recyclable aluminum can"
+      ],
+      "freightData": {
+        "origin": "Austria (import)",
+        "transportMethod": "sea + road",
+        "distance_km": 15000,
+        "co2_per_km": 0.02
+      },
+      "image": "https://via.placeholder.com/300x300/FF5722/FFFFFF?text=Red+Bull"
+    },
+    {
+      "barcode": "6921234567890",
+      "name": "Imported Snack Product",
+      "category": "Snacks",
+      "brand": "Various",
+      "origin": "Asia - Imported",
+      "carbonFootprint": {
+        "product_category": "snack_food",
+        "origin_location": "China/Guangdong",
+        "weight_kg": 0.2,
+        "weight_source": "estimated",
+        "emission_factor": 3.1,
+        "distance_km": 8000,
+        "transport_method": "sea",
+        "production_method": "conventional",
+        "packaging": "plastic",
+        "is_fresh_food": false
+      },
+      "certifications": [],
+      "ecoClaims": [],
+      "freightData": {
+        "origin": "Asia (import)",
+        "transportMethod": "sea + road",
+        "distance_km": 8000,
+        "co2_per_km": 0.02
+      },
+      "image": "https://via.placeholder.com/300x300/607D8B/FFFFFF?text=Imported+Snack"
+    },
+    {
+      "barcode": "0123456789012",
+      "name": "Generic US Product",
+      "category": "Food",
+      "brand": "Generic",
+      "origin": "USA - Imported",
+      "carbonFootprint": {
+        "product_category": "generic_food",
+        "origin_location": "USA/California",
+        "weight_kg": 0.3,
+        "weight_source": "estimated",
+        "emission_factor": 2,
+        "distance_km": 14000,
+        "transport_method": "sea",
+        "production_method": "conventional",
+        "packaging": "mixed",
+        "is_fresh_food": false
+      },
+      "certifications": [],
+      "ecoClaims": [],
+      "freightData": {
+        "origin": "USA (import)",
+        "transportMethod": "sea + road",
+        "distance_km": 14000,
+        "co2_per_km": 0.02
+      },
+      "image": "https://via.placeholder.com/300x300/795548/FFFFFF?text=US+Product"
+    }
+  ],
+  "alternatives": {
+    "localProduce": {
+      "title": "Local Alternatives",
+      "description": "Choose locally produced products to reduce transportation carbon emissions",
+      "averageReduction": 0.8
+    },
+    "organic": {
+      "title": "Organic Alternatives",
+      "description": "Organic certified products typically have lower carbon footprints",
+      "averageReduction": 0.6
+    },
+    "minimalPackaging": {
+      "title": "Minimal Packaging Alternatives",
+      "description": "Choose products with simpler packaging",
+      "averageReduction": 0.4
+    },
+    "plantBased": {
+      "title": "Plant-Based Alternatives",
+      "description": "Plant-based products typically have lower carbon emissions",
+      "averageReduction": 1.2
+    }
+  },
+  "retailers": {
+    "woolworths": {
+      "name": "Woolworths",
+      "storeCount": 1000,
+      "localSourcingPercentage": 96,
+      "carbonNeutralGoal": "2050"
+    },
+    "coles": {
+      "name": "Coles",
+      "storeCount": 800,
+      "localSourcingPercentage": 94,
+      "carbonNeutralGoal": "2050"
+    },
+    "aldi": {
+      "name": "ALDI",
+      "storeCount": 500,
+      "localSourcingPercentage": 92,
+      "carbonNeutralGoal": "2050"
+    }
+  }
+}

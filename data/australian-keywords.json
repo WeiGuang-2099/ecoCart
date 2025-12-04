@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "lastUpdated": "2024-12-04",
+    "totalKeywords": 150,
+    "categories": ["Food", "Beverages", "Daily Necessities", "Personal Care", "Cleaning Supplies"]
+  },
+  "australianProducts": {
+    "Food": {
+      "keywords": [
+        "woolworths", "coles", "aldi", "iga", "macro", "sanitarium", "weet-bix", "vegemite",
+        "arnott's", "tim tam", " Shapes", "cadbury", "darrell lea", "pascall", "allens",
+        "masterfoods", "heinz", "spreets", "smith's", "thins", "pringles", "doritos",
+        "red rock deli", "cob's", "tasty", "meat pies", "four'n twenty", "patties",
+        "mccain", "birds eye", "simplot", "edgell", "sargents", "gourmet garden",
+        "australian eggs", "free range", "organic", "grass fed", "wagyu", "angus",
+        "harvey fresh", "berri", "daily juice", "coca-cola", "pepsi", "schweppes",
+        "mount franklin", "pump", "neverfail", "spring water", "cooper's", "tooheys",
+        "victoria bitter", "cascade", "boag's", "little creatures", "matilda bay",
+        "yarravalle", "yellowglen", "jacobs creek", "penfolds", "wolf blass",
+        "lindeman's", "hardys", "banrock station", "de bortoli", "tahbilk",
+        "rosemount", "wyndham estate", "houghton", "seppeltsfield", "yalumba"
+      ],
+      "patterns": [
+        "made in australia", "product of australia", "australian grown",
+        "100% australian", "locally grown", "australian owned",
+        "grown in australia", "from australia", "australian made"
+      ]
+    },
+    "Beverages": {
+      "keywords": [
+        "vittoria", "lucaffe", "pablo & rusty", "single origin", "coffee beans",
+        "tea leaves", "t2", "madura", "nerada", "bushells", "lipton",
+        "fresh juice", "cold pressed", "smoothie", "coconut water", "kombucha",
+        "milk", "dairy farmers", "pura", "farmers union", "milo", "ovaltine",
+        "beer", "craft beer", "ipa", "lager", "ale", "stout", "porter",
+        "wine", "red wine", "white wine", "chardonnay", "shiraz", "cabernet",
+        "pinot noir", "sauvignon blanc", "riesling", "moscato", "prosecco",
+        "spirits", "whisky", "gin", "vodka", "rum", "brandy", "liqueur"
+      ],
+      "patterns": [
+        "australian brewed", "locally roasted", "single origin",
+        "cold brew", "craft distilled", "small batch", "artisan"
+      ]
+    },
+    "Daily Necessities": {
+      "keywords": [
+        "dettol", "sapoderm", "lifebuoy", "dove", "lux", "camay", "imperial leather",
+        "palmolive", "morris", "cif", "ajax", "mr muscle", "vanish", "napisan",
+        "omo", "radiant", "dyna", "surf", "cold power", "biozet", "earth choice",
+        "ecover", "method", "aware", "select", "homebrand", "smart buy",
+        "kleenex", "sorbent", "tencel", "wondersoft", "zoe", "pocket pack",
+        "glad", "ziploc", "cling wrap", "baking paper", "alfoil", "baking cups",
+        "vileda", "chux", "scotch-brite", "white king", "exit mould", "damp rid"
+      ],
+      "patterns": [
+        "antibacterial", "pH balanced", "dermatologically tested",
+        "hypoallergenic", "biodegradable", "environmentally friendly"
+      ]
+    },
+    "Personal Care": {
+      "keywords": [
+        "bond", "bonds", "cotton", "underwear", "socks", "singlets", "berlei",
+        "bonds baby", "wondersuit", "wiggles", "peter alexander", "sleepwear",
+        "l'oreal", "garnier", "maybelline", "revlon", "covergirl", "max factor",
+        "napoleon", "natio", "australian bodycare", " Sukin", "inika", "ere perez",
+        "moo goo", "gaia", "baby bunting", "love to dream", "ergopouch", "aden + anais",
+        "oral-b", "colgate", "macleans", "sensodyne", "listerine", "mouthwash",
+        "head & shoulders", "pantene", "herbal essences", "dove", "tresemme", "schwarzkopf"
+      ],
+      "patterns": [
+        "natural ingredients", "organic certified", "cruelty free",
+        "vegan friendly", "sulfate free", "paraben free", "phthalate free"
+      ]
+    },
+    "Cleaning Supplies": {
+      "keywords": [
+        "earth choice", "ecover", "method", "aware", "select", "bio home", "abode",
+        "thankyou", "who gives a crap", "pure planet", "eternal", "greencane",
+        "harvey norman", "bunnings", "mitre 10", "officeworks", "big w", "kmart",
+        "target", "myer", "david jones", "woolworths", "coles", "aldi", "iga",
+        "cleaning supplies", "disinfectant", "sanitizer", "antibacterial wipes",
+        "microfiber", "cleaning cloths", "sponges", "scourers", "brushes"
+      ],
+      "patterns": [
+        "plant based", "biodegradable", "septic safe", "grey water safe",
+        "non-toxic", "child safe", "pet safe", "environmentally responsible"
+      ]
+    }
+  },
+  "exclusionKeywords": [
+    "imported", "made in china", "made in usa", "made in europe",
+    "product of china", "product of usa", "product of europe",
+    "foreign", "international", "overseas", "abroad"
+  ]
+}

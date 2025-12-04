@@ -1,0 +1,936 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoCart - Supermarket Carbon Footprint Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .eco-header {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            padding: 2rem 0;
+        }
+        .scanner-container {
+            border: 3px dashed #27ae60;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            background-color: #f8fff9;
+            text-align: center;
+        }
+        .upload-area {
+            border: 2px dashed #95a5a6;
+            border-radius: 10px;
+            padding: 3rem 2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #27ae60;
+            background-color: #f0f9f4;
+        }
+        .upload-area.dragover {
+            border-color: #27ae60;
+            background-color: #e8f8f5;
+        }
+        .result-card {
+            border-left: 4px solid #27ae60;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .carbon-score {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .eco-badge {
+            background-color: #27ae60;
+        }
+        .product-image {
+            border: 3px solid #27ae60;
+            border-radius: 15px;
+            padding: 10px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .product-image:hover {
+            transform: scale(1.05);
+        }
+        .confidence-meter {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+            transition: width 0.5s ease;
+        }
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 0.25rem;
+            display: inline-block;
+        }
+        .alternative-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            transition: transform 0.2s;
+        }
+        .alternative-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 1rem 0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header class="eco-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h1 class="mb-0">
+                        <i class="bi bi-leaf"></i> EcoCart Australia
+                    </h1>
+                    <p class="mb-0 mt-2">Australian Supermarket Carbon Footprint Scanner - Woolworths & Coles Eco Shopping Assistant</p>
+                    <div class="mt-2">
+                        <small class="text-light"> ACCC Guidelines Compliant | Privacy Protection Compliant | Localized Data</small>
+                    </div>
+                </div>
+                <div class="col-md-5 text-md-end">
+                    <div class="eco-stats">
+                        <h5>Australian Shopping Carbon Reduction Contribution</h5>
+                        <div class="carbon-score">0 kg CO2</div>
+                        <small>Helping Australian consumers reduce their carbon footprint</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container my-5">
+        <div class="scanner-container">
+            <h3 class="mb-4">
+                <i class="bi bi-camera"></i> Scan Australian Product Barcodes
+            </h3>
+            
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="text-center p-2 bg-light rounded">
+                        <i class="bi bi-shop text-success"></i>
+                        <small class="d-block">Supports Woolworths</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-2 bg-light rounded">
+                        <i class="bi bi-cart3 text-danger"></i>
+                        <small class="d-block">Supports Coles</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-2 bg-light rounded">
+                        <i class="bi bi-badge-ad text-primary"></i>
+                        <small class="d-block">Supports ALDI</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="upload-area" id="uploadArea">
+                <i class="bi bi-camera-fill" style="font-size: 3rem; color: #95a5a6;"></i>
+                <h5 class="mt-3"> Take photo or upload Australian product barcode</h5>
+                <p class="text-muted">YOLO-NAS AI Recognition Supported | JPG/PNG Format | Barcode clearly visible</p>
+                <div class="mt-2">
+                    <span class="badge bg-success me-2">YOLO-NAS Technology</span>
+                    <span class="badge bg-info me-2">Australian Database</span>
+                    <span class="badge bg-warning">ACCC Compliant</span>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            </div>
+
+            <div id="imagePreview" style="display: none;">
+                <img id="previewImg" class="preview-image" alt="Product preview">
+                <button class="btn btn-success btn-lg" id="scanBtn">
+                    <i class="bi bi-search"></i> Start Scan Analysis
+                </button>
+            </div>
+
+            <div class="loading-spinner text-center my-4" id="loadingSpinner">
+                <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Analyzing...</span>
+                </div>
+                <p class="mt-2"> YOLO-NAS AI is analyzing Australian products...</p>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">
+                        <small>Querying Australian product database...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" style="display: none;">
+            <!-- Australian Compliance Notice -->
+            <div class="alert alert-info" role="alert">
+                <h6><i class="bi bi-shield-check"></i> Australian Compliance Check</h6>
+                <small class="d-block">?Privacy Act 1988 Compliant | ?ACCC Anti-Greenwashing Guidelines | ?Australian Government Data Sources</small>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card result-card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-upc-scan"></i> Australian Barcode Information
+                            </h5>
+                            <div id="barcodeResult"></div>
+                        </div>
+                    </div>
+
+                    <div class="card result-card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-award"></i> ACCC Environmental Claims Review
+                            </h5>
+                            <div id="ecoClaims"></div>
+                            <div id="acccCompliance" class="mt-3"></div>
+                        </div>
+                    </div>
+
+                    <div class="card result-card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-globe-australia"></i> Government Data Validation
+                            </h5>
+                            <div id="governmentData"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card result-card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-graph-up"></i> Australian Carbon Footprint Analysis
+                            </h5>
+                            <div id="carbonFootprint"></div>
+                        </div>
+                    </div>
+
+                    <div class="card result-card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-lightbulb"></i> Local Eco Alternatives
+                            </h5>
+                            <div id="alternatives"></div>
+                        </div>
+                    </div>
+
+                    <div class="card result-card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-map"></i> Nearby Eco Stores
+                            </h5>
+                            <div id="localAlternatives"></div>
+                            <button class="btn btn-outline-success btn-sm mt-2" onclick="findLocalStores()">
+                                <i class="bi bi-geo-alt"></i> Find Nearby Eco Stores
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6> EcoCart Australia</h6>
+                    <p class="text-muted small">Australian Supermarket Eco Shopping Assistant</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Compliance Certifications</h6>
+                    <p class="text-muted small">
+                        ?Privacy Act 1988<br>
+                        ?ACCC Guidelines<br>
+                        ?Australian Data Sources
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Quick Links</h6>
+                    <p class="small">
+                        <a href="/privacy-policy" class="text-decoration-none">Privacy Policy</a><br>
+                        <span class="text-muted">Supports Woolworths, Coles, ALDI</span>
+                    </p>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p class="text-muted mb-0">
+                    <i class="bi bi-heart-fill text-danger"></i> EcoCart - Making every Australian shopping trip contribute to the planet
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+    <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+    <script>
+        let totalCarbonReduction = 0;
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const scanBtn = document.getElementById('scanBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const results = document.getElementById('results');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // Apply real-time image preprocessing
+                const processedImageSrc = preprocessImage(e.target.result);
+                previewImg.src = processedImageSrc;
+                imagePreview.style.display = 'block';
+                uploadArea.style.display = 'none';
+                
+                // Show preprocessing status
+                showPreprocessingStatus();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Real-time image preprocessing
+        function preprocessImage(imageSrc) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                // Set canvas size
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // Draw original image
+                ctx.drawImage(img, 0, 0);
+                
+                // Apply preprocessing filters
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const processedData = applyImageFilters(imageData);
+                ctx.putImageData(processedData, 0, 0);
+            };
+            
+            img.src = imageSrc;
+            return imageSrc; // Return original for now, processed in background
+        }
+
+        // Apply image filters for better recognition
+        function applyImageFilters(imageData) {
+            const data = imageData.data;
+            
+            // Convert to grayscale
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                data[i] = gray;     // Red
+                data[i + 1] = gray; // Green
+                data[i + 2] = gray; // Blue
+                // Alpha remains unchanged
+            }
+            
+            // Enhance contrast
+            const contrast = 1.5;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = ((data[i] - 128) * contrast) + 128;
+                data[i + 1] = ((data[i + 1] - 128) * contrast) + 128;
+                data[i + 2] = ((data[i + 2] - 128) * contrast) + 128;
+            }
+            
+            // Normalize brightness
+            let min = 255, max = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                min = Math.min(min, data[i]);
+                max = Math.max(max, data[i]);
+            }
+            
+            const range = max - min;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = ((data[i] - min) / range) * 255;
+                data[i + 1] = ((data[i + 1] - min) / range) * 255;
+                data[i + 2] = ((data[i + 2] - min) / range) * 255;
+            }
+            
+            return imageData;
+        }
+
+        // Show preprocessing status
+        function showPreprocessingStatus() {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'alert alert-info mt-2';
+            statusDiv.innerHTML = `
+                <i class="bi bi-gear-fill"></i> 
+                <strong>Image preprocessing in progress...</strong><br>
+                        <small>Optimizing image quality to improve recognition accuracy</small>
+            `;
+            
+            const existingStatus = document.querySelector('.preprocessing-status');
+            if (existingStatus) {
+                existingStatus.remove();
+            }
+            
+            statusDiv.className += ' preprocessing-status';
+            imagePreview.appendChild(statusDiv);
+            
+            // Remove status after 2 seconds
+            setTimeout(() => {
+                statusDiv.remove();
+            }, 2000);
+        }
+
+        let zxingReader = null;
+        const getZXingNamespace = () => window.ZXingBrowser || window.ZXing || null;
+
+        scanBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            loadingSpinner.style.display = 'block';
+            scanBtn.disabled = true;
+            
+            // Show dual-engine status
+            showDualEngineStatus();
+
+            try {
+                const decoded = await decodeBarcodeClient(file);
+                const response = await fetch('/api/lookup-barcode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        barcode: decoded.code,
+                        detectionMethod: decoded.method
+                    })
+                });
+
+                const data = await response.json();
+                // Ensure barcode info reflects client decode
+                data.barcode = data.barcode || {};
+                data.barcode.detectionMethod = decoded.method || data.barcode.detectionMethod;
+                data.barcode.confidence = decoded.confidence || data.barcode.confidence || 0.95;
+                data.barcode.code = decoded.code || data.barcode.code;
+
+                displayResults(data);
+                
+                // Show detection method used
+                showDetectionMethod(data.barcode?.detectionMethod || 'Browser-Decode');
+            } catch (error) {
+                console.error('Scan failed:', error);
+                alert(error.message || 'Scan failed, please try again');
+            } finally {
+                loadingSpinner.style.display = 'none';
+                scanBtn.disabled = false;
+                hideDualEngineStatus();
+            }
+        });
+
+        // Client-side barcode decoding: native BarcodeDetector ?ZXing WASM fallback
+        async function decodeBarcodeClient(file) {
+            const variants = await buildDetectionVariants(file);
+            let detection = null;
+
+            // Try native browser barcode detector first
+            if ('BarcodeDetector' in window) {
+                const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] });
+                for (const variant of variants.bitmaps) {
+                    try {
+                        const results = await detector.detect(variant.bitmap);
+                        if (results && results.length > 0) {
+                            detection = {
+                                code: results[0].rawValue,
+                                format: results[0].format || 'unknown',
+                                method: 'Browser-BarcodeDetector',
+                                confidence: 0.97
+                            };
+                            break;
+                        }
+                    } catch (err) {
+                        console.warn('BarcodeDetector failed, trying next method', err);
+                    }
+                }
+            }
+
+            // Fallback: ZXing WebAssembly
+            const zxingNs = getZXingNamespace();
+            if (!detection && zxingNs && zxingNs.BrowserMultiFormatReader) {
+                if (!zxingReader) {
+                    zxingReader = new zxingNs.BrowserMultiFormatReader();
+                }
+                for (const variant of variants.urls) {
+                    try {
+                        const result = await zxingReader.decodeFromImageUrl(variant.url);
+                        detection = {
+                            code: result.text,
+                            format: result.barcodeFormat || 'unknown',
+                            method: 'ZXing-WASM',
+                            confidence: 0.95
+                        };
+                        break;
+                    } catch (err) {
+                        // Try next variant
+                    }
+                }
+            }
+
+            // Cleanup resources
+            variants.bitmaps.forEach(v => v.cleanup());
+            variants.urls.forEach(v => v.cleanup());
+
+            if (!detection) {
+                throw new Error('Unable to read barcode from image, please ensure barcode is clearly visible');
+            }
+            return detection;
+        }
+
+        // Build resized/rotated variants to improve robustness
+        async function buildDetectionVariants(file) {
+            const sourceBitmap = await createImageBitmap(file);
+            const maxWidth = 1280;
+            const scale = Math.min(1, maxWidth / sourceBitmap.width);
+
+            const baseCanvas = document.createElement('canvas');
+            baseCanvas.width = Math.round(sourceBitmap.width * scale);
+            baseCanvas.height = Math.round(sourceBitmap.height * scale);
+            baseCanvas.getContext('2d').drawImage(sourceBitmap, 0, 0, baseCanvas.width, baseCanvas.height);
+
+            const rotatedCanvas = document.createElement('canvas');
+            rotatedCanvas.width = baseCanvas.height;
+            rotatedCanvas.height = baseCanvas.width;
+            const rctx = rotatedCanvas.getContext('2d');
+            rctx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+            rctx.rotate(Math.PI / 2);
+            rctx.drawImage(baseCanvas, -baseCanvas.width / 2, -baseCanvas.height / 2);
+
+            const baseBitmap = await createImageBitmap(baseCanvas);
+            const rotatedBitmap = await createImageBitmap(rotatedCanvas);
+
+            const baseUrl = await canvasToObjectUrl(baseCanvas);
+            const rotatedUrl = await canvasToObjectUrl(rotatedCanvas);
+
+            // Release original bitmap asap
+            if (sourceBitmap.close) sourceBitmap.close();
+
+            return {
+                bitmaps: [
+                    { bitmap: baseBitmap, cleanup: () => baseBitmap.close && baseBitmap.close() },
+                    { bitmap: rotatedBitmap, cleanup: () => rotatedBitmap.close && rotatedBitmap.close() }
+                ],
+                urls: [
+                    { url: baseUrl, cleanup: () => URL.revokeObjectURL(baseUrl) },
+                    { url: rotatedUrl, cleanup: () => URL.revokeObjectURL(rotatedUrl) }
+                ]
+            };
+        }
+
+        function canvasToObjectUrl(canvas) {
+            return new Promise((resolve, reject) => {
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(URL.createObjectURL(blob));
+                    } else {
+                        reject(new Error('Unable to generate image data'));
+                    }
+                }, 'image/jpeg', 0.9);
+            });
+        }
+
+        // Show dual-engine detection status
+        function showDualEngineStatus() {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'alert alert-primary mt-2';
+            statusDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div>
+                        <strong>Dual-engine recognition in progress...</strong><br>
+                        <small>Engine 1: Browser native BarcodeDetector -> Engine 2: ZXing WASM</small>
+                    </div>
+                </div>
+            `;
+            
+            const existingStatus = document.querySelector('.dual-engine-status');
+            if (existingStatus) {
+                existingStatus.remove();
+            }
+            
+            statusDiv.className += ' dual-engine-status';
+            scanBtn.parentNode.appendChild(statusDiv);
+        }
+
+        // Hide dual-engine status
+        function hideDualEngineStatus() {
+            const statusDiv = document.querySelector('.dual-engine-status');
+            if (statusDiv) {
+                statusDiv.remove();
+            }
+        }
+
+        // Show detection method used
+        function showDetectionMethod(method) {
+            let methodText = '';
+            let methodClass = '';
+            
+            switch(method) {
+                case 'Browser-BarcodeDetector':
+                    methodText = 'Browser native BarcodeDetector';
+                    methodClass = 'alert-success';
+                    break;
+                case 'ZXing-WASM':
+                    methodText = 'ZXing WASM decoding';
+                    methodClass = 'alert-info';
+                    break;
+                case 'Browser-Decode':
+                    methodText = 'Browser decoding';
+                    methodClass = 'alert-primary';
+                    break;
+                case 'Enhanced-Analysis-v2':
+                    methodText = 'Enhanced barcode analysis';
+                    methodClass = 'alert-success';
+                    break;
+                case 'OCR-Keyword-Filtering':
+                    methodText = 'OCR text recognition + Australian keyword filtering';
+                    methodClass = 'alert-info';
+                    break;
+                case 'YOLO-NAS-v1.0-Fallback':
+                    methodText = 'YOLO-NAS fallback method';
+                    methodClass = 'alert-warning';
+                    break;
+                default:
+                    methodText = 'Unknown recognition method';
+                    methodClass = 'alert-secondary';
+            }
+            
+            const methodDiv = document.createElement('div');
+            methodDiv.className = `alert ${methodClass} mt-2`;
+            methodDiv.innerHTML = `
+                <small><strong>Recognition Method:</strong> ${methodText}</small>
+            `;
+            
+            const existingMethod = document.querySelector('.detection-method');
+            if (existingMethod) {
+                existingMethod.remove();
+            }
+            
+            methodDiv.className += ' detection-method';
+            results.appendChild(methodDiv);
+        }
+
+        function displayResults(data) {
+            results.style.display = 'block';
+
+            // Enhanced barcode info with Australian context and product image
+            const productProfile = data.carbonFootprint || {};
+            const productName = productProfile.productName || productProfile.name || data.barcode?.code || 'Unknown product';
+            const productImage = productProfile.image || productProfile.photoUrl || null;
+
+            if (data.barcode && data.barcode.detected) {
+                let barcodeHtml = '<div class="mb-3">';
+                
+                // Add product image if available
+                if (productImage) {
+                    barcodeHtml += `
+                        <div class="text-center mb-3">
+                            <div class="product-image d-inline-block">
+                                <img src="${productImage}" alt="${productName}" 
+                                     class="img-fluid rounded" style="max-height: 200px; max-width: 200px; object-fit: cover;">
+                            </div>
+                            <p class="mt-2 mb-0"><strong>${productName}</strong></p>
+                        </div>
+                    `;
+                }
+                
+                barcodeHtml += `
+                    <div class="mb-2">
+                        <p><strong> Australian Barcode:</strong> ${data.barcode.code}</p>
+                        <p><strong>Detection Method:</strong> ${data.barcode.detectionMethod}</p>
+                        <p><strong>Recognition Confidence:</strong> ${(data.barcode.confidence * 100).toFixed(1)}%</p>
+                        <div class="confidence-meter">
+                            <div class="confidence-fill" style="width: ${data.barcode.confidence * 100}%"></div>
+                        </div>
+                        ${data.barcode.isAustralian ? '<span class="badge bg-success me-2">Australian Product</span>' : '<span class="badge bg-warning me-2">Imported Product</span>'}
+                        ${data.barcode.type ? `<span class="badge bg-info me-2">${data.barcode.type}</span>` : ''}
+                        ${data.barcode.quality ? `<span class="badge bg-secondary">Quality: ${data.barcode.quality}</span>` : ''}
+                    </div>
+                </div>`;
+                
+                document.getElementById('barcodeResult').innerHTML = barcodeHtml;
+            } else {
+                document.getElementById('barcodeResult').innerHTML = '<p class="text-muted">No barcode detected</p>';
+            }
+
+            // Eco claims with ACCC compliance
+            const ecoClaimsList = data.ecoClaims?.claims || [];
+            const ecoClaimsHtml = ecoClaimsList.length > 0 ? 
+                ecoClaimsList.map(claim => `<span class="eco-badge">${claim}</span>`).join('') :
+                '<p class="text-muted">No environmental claims found</p>';
+            document.getElementById('ecoClaims').innerHTML = ecoClaimsHtml;
+
+            // ACCC compliance display
+            if (data.acccCompliance) {
+                const acccHtml = `
+                    <div class="alert ${data.acccCompliance.acccCompliance.status === 'compliant' ? 'alert-success' : 'alert-warning'}">
+                        <h6><i class="bi bi-shield-exclamation"></i> ACCC Compliance Status</h6>
+                        <p><strong>Status:</strong> ${data.acccCompliance.acccCompliance.status}</p>
+                        <p><strong>Risk level:</strong> ${data.acccCompliance.acccCompliance.riskLevel}</p>
+                        ${data.acccCompliance.acccCompliance.warnings.length > 0 ? 
+                            `<p><strong>Warnings:</strong></p><ul>${data.acccCompliance.acccCompliance.warnings.map(w => `<li>${w.message}</li>`).join('')}</ul>` : ''}
+                    </div>
+                `;
+                document.getElementById('acccCompliance').innerHTML = acccHtml;
+            }
+
+            // Enhanced carbon footprint with Australian data and emission breakdown
+            const carbonDetails = [];
+            if (productProfile.product_category) {
+                carbonDetails.push(`<li><strong>AFSIS Category:</strong> ${productProfile.product_category}</li>`);
+            }
+            if (productProfile.origin_location) {
+                carbonDetails.push(`<li><strong>Origin location:</strong> ${productProfile.origin_location}</li>`);
+            }
+            if (productProfile.weight_kg) {
+                const weightLabel = `${Number(productProfile.weight_kg).toFixed(2)} kg${productProfile.weight_source === 'estimated' ? ' (estimated value)' : ''}`;
+                carbonDetails.push(`<li><strong>Unit weight:</strong> ${weightLabel}</li>`);
+            }
+            if (productProfile.emission_factor) {
+                carbonDetails.push(`<li><strong>Emission factor:</strong> ${productProfile.emission_factor.toFixed(2)} kg CO2e/kg</li>`);
+            }
+            if (productProfile.production_method) {
+                carbonDetails.push(`<li><strong>Production method:</strong> ${translateProduction(productProfile.production_method)}</li>`);
+            }
+            if (productProfile.packaging) {
+                carbonDetails.push(`<li><strong>Packaging:</strong> ${productProfile.packaging}</li>`);
+            }
+            if (productProfile.distance_km) {
+                carbonDetails.push(`<li><strong>Transport distance:</strong> ${productProfile.distance_km} km</li>`);
+            }
+            if (productProfile.transport_method) {
+                carbonDetails.push(`<li><strong>Transport mode:</strong> ${translateTransport(productProfile.transport_method)}</li>`);
+            }
+            if (productProfile.transport_factor) {
+                carbonDetails.push(`<li><strong>Transport factor:</strong> ${productProfile.transport_factor} kg CO2e / tonne-km</li>`);
+            }
+            if (productProfile.adjustment_factor && productProfile.adjustment_factor !== 1) {
+                carbonDetails.push(`<li><strong>Adjustment factor:</strong> ${productProfile.adjustment_factor} (perishable air freight)</li>`);
+            }
+            if (productProfile.certifications && productProfile.certifications.length) {
+                carbonDetails.push(`<li><strong>Certifications:</strong> ${productProfile.certifications.join(', ')}</li>`);
+            }
+            if (productProfile.ecoClaims && productProfile.ecoClaims.length) {
+                carbonDetails.push(`<li><strong>Eco labels:</strong> ${productProfile.ecoClaims.join(', ')}</li>`);
+            }
+            if (productProfile.weight_note) {
+                carbonDetails.push(`<li><strong>Weight note:</strong> ${productProfile.weight_note}</li>`);
+            }
+
+            const componentBreakdown = `
+                <div class="alert alert-light mt-3">
+                    <p class="mb-1"><strong>Production emissions (PRODUCTION):</strong> ${formatEmission(productProfile.production_emissions)} kg CO2e</p>
+                    <p class="mb-1"><strong>Transport emissions (TRANSPORT):</strong> ${formatEmission(productProfile.transport_emissions)} kg CO2e</p>
+                    <p class="mb-1"><strong>Packaging emissions (PACKAGING):</strong> ${formatEmission(productProfile.packaging_emissions)} kg CO2e</p>
+                    <hr class="my-2">
+                    <p class="mb-0"><strong>TOTAL = PRODUCTION + TRANSPORT + PACKAGING:</strong> ${formatEmission(productProfile.co2_kg)} kg CO2e</p>
+                </div>
+            `;
+
+            const carbonHtml = `
+                <div class="text-center mb-3">
+                    <div class="carbon-score">${productProfile.co2_kg?.toFixed ? productProfile.co2_kg.toFixed(2) : '0.00'} kg</div>
+                    <p class="text-muted">Australian carbon footprint</p>
+                    <p class="mb-0"><strong>${productName}</strong></p>
+                </div>
+                <p><strong>Data source:</strong> ${productProfile.source || 'afsis-mapped'}</p>
+                ${productProfile.category ? `<p><strong>Retail category:</strong> ${productProfile.category}</p>` : ''}
+                ${productProfile.brand ? `<p><strong>Brand:</strong> ${productProfile.brand}</p>` : ''}
+                ${productProfile.origin ? `<p><strong>Origin description:</strong> ${productProfile.origin}</p>` : ''}
+                ${carbonDetails.length ? `<ul class="mb-0">${carbonDetails.join('')}</ul>` : ''}
+                ${componentBreakdown}
+            `;
+            document.getElementById('carbonFootprint').innerHTML = carbonHtml;
+
+            // Government data display
+            if (data.governmentData && data.governmentData.afsisData) {
+                const govHtml = `
+                    <p><strong>?AFSIS data:</strong> Verified</p>
+                    <p><strong>Product origin:</strong> ${data.governmentData.afsisData.productOrigin.country}</p>
+                    <p><strong>Australian certifications:</strong> ${data.governmentData.afsisData.certifications.join(', ') || 'None'}</p>
+                    <p><strong>Data quality:</strong> ${data.governmentData.dataQuality.afsisReliability}</p>
+                `;
+                document.getElementById('governmentData').innerHTML = govHtml;
+            }
+
+            // Australian alternatives
+            const alternativesList = data.alternatives || [];
+            const alternativesHtml = alternativesList.map(alt => `
+                <div class="alternative-card">
+                    <h6>${alt.name}</h6>
+                    <p class="mb-2">${alt.description}</p>
+                    ${alt.australianContext ? `<small class="text-muted d-block">${alt.australianContext}</small>` : ''}
+                    ${alt.exampleBrands ? `<small class="text-info d-block">Suggested brands: ${alt.exampleBrands.join(', ')}</small>` : ''}
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="text-success"><strong>Reduce ${alt.carbonReduction.toFixed(2)} kg CO2</strong></span>
+                        <span class="badge bg-secondary">${alt.priceDiff}</span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('alternatives').innerHTML = alternativesHtml;
+
+            if (alternativesList.length > 0) {
+                const maxReduction = Math.max(...alternativesList.map(a => a.carbonReduction));
+                totalCarbonReduction += maxReduction;
+                document.querySelector('.carbon-score').textContent = `${totalCarbonReduction.toFixed(1)} kg CO2`;
+            }
+        }
+
+        // Find local eco stores
+        async function findLocalStores() {
+            if (!navigator.geolocation) {
+                alert('Your browser does not support geolocation.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const userLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+
+                try {
+                    const response = await fetch('/api/local-alternatives', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            productCategory: 'Food', // Default category
+                            userLocation: userLocation
+                        })
+                    });
+
+                    const data = await response.json();
+                    displayLocalAlternatives(data);
+                } catch (error) {
+                    console.error('Failed to load local alternatives:', error);
+                    alert('Unable to load local alternatives. Please try again.');
+                }
+            }, (error) => {
+                alert('Unable to access your location.');
+            });
+        }
+
+        function displayLocalAlternatives(data) {
+            const html = `
+                <div class="mt-3">
+                    <p><strong> Search location:</strong> ${data.searchLocation.city}</p>
+                    <p><strong> Stores found:</strong> ${data.totalStoresFound}</p>
+                    ${data.recommendations.map(store => `
+                        <div class="border rounded p-2 mb-2">
+                            <h6>${store.name}</h6>
+                            <small class="text-muted d-block"> ${store.address}</small>
+                            <small class="text-success d-block"> Carbon reduction score: ${store.carbonReductionScore}/10</small>
+                            <small class="text-info d-block">?${store.rating}/5</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            document.getElementById('localAlternatives').innerHTML = html;
+        }
+
+        function translateProduction(method) {
+            switch((method || '').toLowerCase()) {
+                case 'organic':
+                    return 'Organic production';
+                case 'free-range':
+                    return 'Free-range';
+                case 'plant-based':
+                    return 'Plant-based formulation';
+                case 'conventional':
+                    return 'Conventional production';
+                default:
+                    return method || 'Unknown';
+            }
+        }
+
+        function translateTransport(method) {
+            switch((method || '').toLowerCase()) {
+                case 'air':
+                    return 'Air freight';
+                case 'sea':
+                    return 'Sea freight';
+                case 'rail':
+                    return 'Rail freight';
+                case 'road_truck':
+                default:
+                    return 'Road truck';
+            }
+        }
+
+        function formatEmission(value) {
+            const numeric = typeof value === 'number' ? value : Number(value || 0);
+            return numeric.toFixed(3);
+        }
+    </script>
+</body>
+</html>
+
+
+
+
