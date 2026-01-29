@@ -5,10 +5,23 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const sharp = require('sharp');
+const morgan = require('morgan');
+const { body, validationResult } = require('express-validator');
+const config = require('./config');
 const ACCCComplianceChecker = require('./accc-compliance');
 const AustralianDataIntegration = require('./government-data-integration');
 const LocalAlternativesMap = require('./local-alternatives-map');
 const YOLONASBarcodeDetector = require('./yolo-nas-barcode');
+
+// Validate configuration on startup
+try {
+  config.validate();
+  console.log('✓ Configuration validated successfully');
+  console.log('Configuration:', config.getSummary());
+} catch (error) {
+  console.error('✗ Configuration validation failed:', error.message);
+  process.exit(1);
+}
 
 // Load Australian product database
 const australianProducts = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'australian-products.json'), 'utf8'));
@@ -34,10 +47,17 @@ const yoloDetector = new YOLONASBarcodeDetector();
 const australianBarcodePrefixes = ['93', '930', '931', '932', '933', '934', '935', '936', '937'];
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = config.port;
 
 // Initialize ACCC compliance checker
 const acccChecker = new ACCCComplianceChecker();
+
+// Request logging middleware (before other middleware)
+if (config.nodeEnv === 'development') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
+}
 
 app.use(cors());
 app.use(express.json());
@@ -136,12 +156,22 @@ app.post('/api/scan-barcode', upload.single('image'), async (req, res) => {
 });
 
 // Fast path: client has already identified barcode, directly query data
-app.post('/api/lookup-barcode', async (req, res) => {
-  try {
-    const { barcode, detectionMethod } = req.body || {};
-    if (!barcode) {
-      return res.status(400).json({ error: 'barcode field is required' });
+app.post('/api/lookup-barcode',
+  // Input validation middleware
+  body('barcode').isString().trim().isLength({ min: 6, max: 18 }).withMessage('Barcode must be between 6 and 18 characters'),
+  body('detectionMethod').optional().isString().trim(),
+  async (req, res) => {
+    // Check validation results
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: errors.array() 
+      });
     }
+
+    try {
+      const { barcode, detectionMethod } = req.body;
 
     const barcodeResult = {
       detected: true,
@@ -186,11 +216,11 @@ app.post('/api/lookup-barcode', async (req, res) => {
         complianceStandards: ['Privacy-Act-1988', 'ACCC-Guidelines']
       }
     });
-  } catch (error) {
-    console.error('Barcode direct query error:', error);
-    res.status(500).json({ error: 'Server processing failed' });
-  }
-});
+    } catch (error) {
+      console.error('Barcode direct query error:', error);
+      res.status(500).json({ error: 'Server processing failed' });
+    }
+  });
 
 async function extractBarcode(imageBuffer) {
   try {
@@ -512,13 +542,22 @@ function getBarcodeConfidence(barcodeValue = '') {
 }
 
 // API endpoint for local eco alternatives
-app.post('/api/local-alternatives', express.json(), async (req, res) => {
-  try {
-    const { productCategory, userLocation } = req.body;
-    
-    if (!userLocation || !userLocation.lat || !userLocation.lng) {
-      return res.status(400).json({ error: 'User location information is required' });
+app.post('/api/local-alternatives',
+  body('productCategory').optional().isString().trim(),
+  body('userLocation.lat').isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90'),
+  body('userLocation.lng').isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180'),
+  async (req, res) => {
+    // Check validation results
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: errors.array() 
+      });
     }
+
+    try {
+      const { productCategory, userLocation } = req.body;
 
     const recommendations = localMap.getStoreRecommendations(
       productCategory,
@@ -539,17 +578,52 @@ app.post('/api/local-alternatives', express.json(), async (req, res) => {
       searchLocation: recommendations.searchLocation,
       totalStoresFound: nearbyStores.stores.length
     });
-  } catch (error) {
-    console.error('Local alternatives query error:', error);
-    res.status(500).json({ error: 'Failed to get local alternatives' });
-  }
-});
+    } catch (error) {
+      console.error('Local alternatives query error:', error);
+      res.status(500).json({ error: 'Failed to get local alternatives' });
+    }
+  });
 
 // Privacy policy endpoint
 app.get('/privacy-policy', (req, res) => {
   res.sendFile(path.join(__dirname, 'privacy-policy.html'));
 });
 
+// 404 handler - must be before error handler
+app.use((req, res, next) => {
+  res.status(404).json({ 
+    error: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
+});
+
+// Unified error handling middleware - must be last
+app.use((err, req, res, next) => {
+  // Log error details
+  console.error('Error occurred:', {
+    message: err.message,
+    stack: config.nodeEnv === 'development' ? err.stack : undefined,
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+
+  // Determine status code
+  const statusCode = err.statusCode || err.status || 500;
+  
+  // Send error response
+  res.status(statusCode).json({
+    error: err.message || 'Internal server error',
+    ...(config.nodeEnv === 'development' && { 
+      stack: err.stack,
+      details: err.details 
+    })
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`EcoCart server running on port ${PORT}`);
+  console.log(`Environment: ${config.nodeEnv}`);
+  console.log(`Visit: http://localhost:${PORT}`);
 });

@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+.git
+.cache
+coverage
+*.min.js
+*.min.css
+package-lock.json
+data/*.json
