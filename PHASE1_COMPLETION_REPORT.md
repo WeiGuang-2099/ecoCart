@@ -241,7 +241,7 @@ Each product includes:
 ## 🚀 Next Steps (Phase 2)
 
 Phase 1 provides a solid foundation for Phase 2: 功能增强 (Feature Enhancement), which includes:
-- Real barcode detection integration (ONNX or Cloud API)
+- Client-side barcode detection enhancements (BarcodeDetector API + ZXing)
 - Database persistence (SQLite/PostgreSQL)
 - User accounts and scan history
 - Advanced analytics and reporting

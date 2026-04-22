@@ -1,106 +1,255 @@
-# EcoCart - Supermarket Carbon Footprint Scanner
+# EcoCart
 
-EcoCart is a privacy-first web app that lets Australian shoppers scan product barcodes, estimate cradle-to-shelf carbon emissions, and discover local eco-friendly alternatives.
+**Supermarket Carbon Footprint Scanner** -- Scan product barcodes, estimate cradle-to-shelf carbon emissions, and discover local eco-friendly alternatives.
 
-## Features
-1. **Browser barcode decoding**: native `BarcodeDetector` with ZXing WASM fallback (no image leaves the browser).
-2. **ACCC greenwashing checks**: flags vague or certification-required sustainability claims.
-3. **Australian carbon model**: AFSIS product categories, ANZ LCA emission factors, National Freight Data Hub distances, NGA transport factors, and perishable air-freight adjustment.
-4. **Local eco alternatives**: nearby refill/organic/zero-waste stores plus suggested substitutions.
-5. **Privacy-first processing**: images handled in memory; fallback cloud calls disabled by default.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node: 18+](https://img.shields.io/badge/Node-18%2B-green.svg)](https://nodejs.org/)
+[![Tests: 120+](https://img.shields.io/badge/Tests-120%2B-brightgreen.svg)](#testing)
 
-## Tech Stack
-- **Backend:** Node.js + Express
-- **Frontend:** HTML5 + Bootstrap 5 + vanilla JavaScript
-- **Image processing:** Jimp (server) + Canvas APIs (client)
-
-## Required Dependencies
-- express, cors, multer, dotenv
-- axios (for optional network calls)
-- sharp and jimp (image preprocessing on the server)
-- @zxing/library and @zxing/browser (client-side barcode decoding)
-- tesseract.js (OCR fallback if enabled)
-- bootstrap and bootstrap-icons (UI)
+---
 
 ## Architecture
-- **public/index.html**: Single-page UI; decodes barcodes in-browser, then calls `/api/lookup-barcode`.
-- **server.js**: Express API, carbon model computation (production + transport + packaging), compliance headers.
-- **data/australian-products.json**: Product catalog with AFSIS categories, origin locations, weights, emission factors, and logistics inputs.
-- **accc-compliance.js**: ACCC anti-greenwashing rules and recommendations.
-- **local-alternatives-map.js**: Local store recommendations and map snippet generator.
-- **yolo-nas-barcode.js**: Simulated barcode/OCR logic (browser decoding is primary).
+
+```mermaid
+graph TB
+    Browser[Browser / PWA] -->|Barcode Scan| API[Express API Server]
+    API --> Carbon[Carbon Service]
+    API --> ACCC[ACCC Compliance Service]
+    API --> OFF[Open Food Facts API]
+    API --> Local[Local Alternatives Service]
+    API --> Gov[Gov Data Service]
+    Carbon --> DB[Product Database]
+```
+
+The backend follows a layered architecture with dependency injection. Route handlers receive service instances through a factory pattern, keeping modules testable and loosely coupled.
+
+## Features
+
+- **Barcode scanning** -- Browser-native `BarcodeDetector` with ZXing WASM fallback; images never leave the device
+- **Carbon footprint estimation** -- Production, transport, and packaging emissions using ANZ LCA factors and NGA transport data
+- **ACCC greenwashing detection** -- Flags vague or certification-required sustainability claims
+- **Open Food Facts integration** -- Enriches product data from the global open database
+- **Local eco alternatives** -- Nearby refill, organic, and zero-waste stores with comparison metrics
+- **PWA support** -- Installable, works offline with cached assets
+- **Internationalization** -- English and Chinese UI via i18next
+- **Privacy-first** -- In-memory-only image processing, zero data retention, Privacy Act 1988 compliant
+
+## Tech Stack
+
+| Layer      | Technologies                                                       |
+|------------|--------------------------------------------------------------------|
+| Backend    | Node.js 18+, Express 4, Multer, Helmet, express-rate-limit        |
+| Frontend   | React 19, Vite 6, Chart.js, ZXing, Bootstrap 5                    |
+| Data       | 1 220+ Australian products, Open Food Facts API, ANZ LCA factors   |
+| DevOps     | Docker, GitHub Actions CI, ESLint, Prettier, Jest                  |
+
+## Project Structure
+
+```
+ecoCart/
+  server.js                   # Entry point, starts HTTP server
+  server/
+    app.js                    # Express app setup, DI container
+    routes/
+      barcode.js              # Barcode scan and lookup endpoints
+      alternatives.js         # Local alternatives endpoint
+      pages.js                # Static page routes
+    services/
+      carbon.js               # Carbon footprint calculations
+      barcode.js              # Barcode decoding logic
+      accc.js                 # ACCC greenwashing checks
+      alternatives.js         # Local alternatives lookup
+      gov-data.js             # Government data integration
+      open-food-facts.js      # OFF API client
+    middleware/
+      validation.js           # Request validation rules
+      security.js             # Security headers and rate limiting
+      error-handler.js        # Centralized error handling
+    utils/
+      helpers.js              # Shared utility functions
+    __tests__/
+      api.test.js             # API integration tests
+  client/
+    src/
+      main.jsx                # React entry point
+      App.jsx                 # Root component with routing
+      components/             # Reusable UI components
+      pages/                  # Page-level views (Home, Results, History, Settings)
+      hooks/                  # Custom React hooks
+      i18n/                   # Internationalization config and locales
+      styles/                 # Global CSS
+      utils/                  # Browser-side utilities
+    public/                   # Static assets (PWA icons, favicons)
+    vite.config.js            # Vite build configuration
+  config/
+    index.js                  # Centralized configuration
+  data/
+    australian-products.json  # Product catalog (1 220+ items)
+    australian-keywords.json  # OCR keyword heuristics
+  scripts/
+    generate-products.js      # Product data generator
+  .github/
+    workflows/ci.yml          # GitHub Actions CI pipeline
+```
 
 ## Getting Started
 
-### 1. Install dependencies
+### Prerequisites
+
+- Node.js 18 or later
+- npm 9 or later
+
+### Install
+
 ```bash
+# Clone the repository
+git clone https://github.com/<your-org>/ecoCart.git
+cd ecoCart
+
+# Install backend dependencies
 npm install
+
+# Install frontend dependencies
+cd client && npm install && cd ..
 ```
 
-### 2. Configure environment variables
-Create or update `.env` with your OpenAI key (only used if you re-enable cloud fallbacks) and port:
-```
-OPENAI_API_KEY=your_openai_key
+### Configure
+
+Create a `.env` file in the project root:
+
+```env
 PORT=5000
+NODE_ENV=development
+OPENAI_API_KEY=          # Optional: only needed if cloud OCR is enabled
 ```
 
-### 3. Run the server
+### Run
+
 ```bash
+# Development (backend with auto-reload)
+npm run dev
+
+# Development (frontend dev server, separate terminal)
+npm run client
+
+# Production
 npm start
 ```
 
-Visit `http://localhost:5000` and upload a photo of a supermarket barcode.
+The backend serves at `http://localhost:5000`. The Vite dev server (default port 5173) proxies API requests to the backend.
+
+## API Documentation
+
+| Method | Path                     | Description                                              |
+|--------|--------------------------|----------------------------------------------------------|
+| POST   | `/api/scan-barcode`      | Upload a barcode image; returns carbon data, claims, and alternatives |
+| GET    | `/api/lookup-barcode`    | Lookup a barcode by query parameter `code`               |
+| POST   | `/api/lookup-barcode`    | Submit a decoded barcode; same response as scan without image upload |
+| POST   | `/api/local-alternatives`| Find nearby eco stores by category and location          |
+| GET    | `/`                      | Serve the React frontend                                 |
+| GET    | `/privacy-policy`        | Serve the privacy policy page                            |
+
+### POST /api/scan-barcode
+
+**Request:** `multipart/form-data` with an `image` field (max 5 MB).
+
+**Response (abbreviated):**
+
+```json
+{
+  "barcode": { "detected": true, "code": "9330777000015", "type": "EAN-13" },
+  "carbonFootprint": { "totalKg": 1.23 },
+  "ecoClaims": { "claims": [], "acccCompliant": true },
+  "alternatives": [],
+  "acccCompliance": { "summary": "No greenwashing concerns" }
+}
+```
+
+### POST /api/lookup-barcode
+
+**Request:**
+
+```json
+{ "barcode": "9330777000015", "detectionMethod": "client-decode" }
+```
+
+### POST /api/local-alternatives
+
+**Request:**
+
+```json
+{ "productCategory": "dairy", "userLocation": { "lat": -33.8688, "lng": 151.2093 } }
+```
+
+## Architecture Details
+
+The Express application is assembled in `server/app.js` using a dependency-injection pattern:
+
+1. **Config** is loaded from `config/index.js` and `.env`.
+2. **Services** (carbon, barcode, ACCC, alternatives, gov-data, open-food-facts) are instantiated with config and data.
+3. **Routes** receive service references through a `deps` object, avoiding global singletons.
+4. **Middleware** layers handle validation, security headers, rate limiting, and error normalization.
+
+This structure keeps every module independently testable -- services can be mocked or stubbed without touching the Express app.
+
+## Testing
+
+The project uses Jest with Supertest for integration tests.
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate coverage report
+npm run test:coverage
+```
+
+The test suite includes over 120 tests covering API endpoints, service logic, and edge cases.
+
+## Deployment
+
+### Docker
+
+```bash
+# Build the image
+docker build -t ecocart .
+
+# Run the container
+docker run -p 5000:5000 --env-file .env ecocart
+```
+
+### CI
+
+GitHub Actions runs linting and tests on every push. The workflow is defined in `.github/workflows/ci.yml`.
 
 ## Scripts
-- `npm start` — start the Express server.
-- `npm run dev` — start with nodemon (auto-restart on changes).
 
-## API Overview
-
-### `POST /api/scan-barcode`
-Accepts an image upload and returns detected barcode info, carbon footprint, eco-claims, and alternatives.
-
-### `POST /api/lookup-barcode`
-Accepts a JSON payload with `{ "barcode": "9330777000015" }` when the browser already decoded the code, returning the same payload without uploading the image again.
-
-### `POST /api/local-alternatives`
-Provide `{ productCategory, userLocation: { lat, lng } }` to fetch nearby refill or organic stores plus comparison metrics.
-
-## Carbon Model (Summary)
-- **Total = PRODUCTION + TRANSPORT + PACKAGING**
-- **Production**: `weight_kg * emission_factor` (ANZ LCA v3.1)
-- **Transport**: `(weight_kg / 1000) * distance_km * transport_factor * adjustment_factor`
-  - transport_factor (NGA Table 5.2): air 0.84, sea 0.02, road_truck 0.096, rail 0.025 kg CO2e/tonne-km
-  - adjustment_factor: 5.5 if fresh food AND air; otherwise 1.0 (NGA Section 4.3.2)
-- **Packaging**: fixed 0.05 kg CO2e (Australian Packaging Covenant Standard v2.1)
-- Defaults: category-based weight and emission factors from AFSIS/ANZ LCA when product data is missing; marked as “Estimated value.”
+| Command               | Description                          |
+|-----------------------|--------------------------------------|
+| `npm start`           | Start the production server          |
+| `npm run dev`         | Start backend with nodemon           |
+| `npm run client`      | Start the Vite frontend dev server   |
+| `npm run build`       | Build the React frontend for production |
+| `npm test`            | Run the Jest test suite              |
+| `npm run test:watch`  | Run tests in watch mode              |
+| `npm run test:coverage`| Generate test coverage report       |
+| `npm run lint`        | Lint JavaScript files with ESLint    |
+| `npm run lint:fix`    | Auto-fix linting issues              |
+| `npm run format`      | Format code with Prettier            |
+| `npm run format:check`| Check formatting without writing     |
 
 ## Data Sources
-- AFSIS barcode/category mapping (for product_category and origin_location)
-- ANZ LCA Database v3.1 (emission factors, default weights)
-- National Freight Data Hub (distance assumptions)
-- NGA Table 5.2 (transport factors)
-- Australian Packaging Covenant Standard v2.1 (packaging factor)
 
-## Privacy
-- Images processed in-memory; no persistent storage.
-- Location used only with user consent for local alternatives.
-- Compliance headers set for Privacy Act 1988.
-
-## Project Structure
-```
-ecoCart/
-|-- server.js                 # Express server and API routes
-|-- public/index.html         # Single-page UI
-|-- data/australian-products.json  # Product + carbon model metadata
-|-- data/australian-keywords.json  # OCR keyword heuristics
-|-- accc-compliance.js        # ACCC greenwashing checker
-|-- local-alternatives-map.js # Local store lookup + map HTML
-`-- README.md
-```
-
-## Contributing
-Pull requests and bug reports are welcome! Please run tests (if applicable) and describe any data-source updates clearly.
+- **AFSIS** -- Barcode/category mapping, product categories, origin locations
+- **ANZ LCA Database v3.1** -- Emission factors and default weights
+- **National Freight Data Hub** -- Distance assumptions
+- **NGA Table 5.2** -- Transport emission factors
+- **Australian Packaging Covenant Standard v2.1** -- Packaging emission factor
+- **Open Food Facts** -- Global open product database
 
 ## License
-MIT
+
+MIT License. See the [LICENSE](LICENSE) file for details.

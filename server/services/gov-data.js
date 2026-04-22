@@ -2,6 +2,26 @@
 // AFSIS (Australian Food and Grocery Information Service)
 // National Freight Data Hub integration
 
+const CITY_DISTANCES = {
+  'Sydney-Melbourne': 880,
+  'Sydney-Brisbane': 730,
+  'Sydney-Adelaide': 1370,
+  'Sydney-Perth': 3930,
+  'Sydney-Canberra': 280,
+  'Sydney-Hobart': 1110,
+  'Sydney-Darwin': 3960,
+  'Melbourne-Brisbane': 1670,
+  'Melbourne-Adelaide': 725,
+  'Melbourne-Perth': 3420,
+  'Melbourne-Canberra': 660,
+  'Melbourne-Hobart': 600,
+  'Brisbane-Adelaide': 2040,
+  'Brisbane-Perth': 4310,
+  'Brisbane-Canberra': 940,
+  'Adelaide-Perth': 2690,
+  'Perth-Darwin': 4040
+};
+
 class AustralianDataIntegration {
   constructor() {
     this.afsisBaseURL = 'https://www.agriculture.gov.au/afsis';
@@ -93,7 +113,7 @@ class AustralianDataIntegration {
   getProductOrigin(barcode) {
     const barcodePrefix = barcode.substring(0, 3);
     const australianPrefixes = ['930', '931', '932', '933', '934', '935', '936', '937'];
-    
+
     if (australianPrefixes.includes(barcodePrefix)) {
       return {
         country: 'Australia',
@@ -102,7 +122,7 @@ class AustralianDataIntegration {
         localContent: this.estimateLocalContent(barcode)
       };
     }
-    
+
     return {
       country: 'Imported',
       confidence: 'medium',
@@ -142,7 +162,7 @@ class AustralianDataIntegration {
   // Transport methods between locations
   getTransportMethods(origin, destination) {
     const distance = this.calculateDistance(origin, destination);
-    
+
     if (distance < 500) {
       return ['road'];
     } else if (distance < 3000) {
@@ -152,17 +172,23 @@ class AustralianDataIntegration {
     }
   }
 
-  // Distance calculation (simplified)
+  // Distance calculation using deterministic city-to-city lookup
   calculateDistance(origin, destination) {
-    const cityDistances = {
-      'Sydney-Melbourne': 880,
-      'Sydney-Brisbane': 730,
-      'Melbourne-Adelaide': 725,
-      'Perth-East Coast': 3500
-    };
+    const originCity = origin.split(',')[0].trim();
+    const destCity = destination.split(',')[0].trim();
 
-    const routeKey = `${origin.split(',')[0]}-${destination.split(',')[0]}`;
-    return cityDistances[routeKey] || Math.random() * 2000 + 500;
+    const forwardKey = `${originCity}-${destCity}`;
+    const reverseKey = `${destCity}-${originCity}`;
+
+    if (CITY_DISTANCES[forwardKey]) {
+      return CITY_DISTANCES[forwardKey];
+    }
+    if (CITY_DISTANCES[reverseKey]) {
+      return CITY_DISTANCES[reverseKey];
+    }
+
+    // Default to a reasonable average for Australian domestic freight
+    return 1500;
   }
 
   // Optimal route recommendation

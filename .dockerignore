@@ -1,0 +1,13 @@
+node_modules
+client/node_modules
+.git
+.claude
+.trae
+coverage
+docs
+*.md
+!README.md
+plan.md
+PHASE1_COMPLETION_REPORT.md
+client/src
+client/public

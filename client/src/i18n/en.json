@@ -1,0 +1,73 @@
+{
+  "app": {
+    "title": "EcoCart Australia",
+    "subtitle": "Supermarket Carbon Footprint Scanner"
+  },
+  "nav": {
+    "scan": "Scan",
+    "history": "History",
+    "settings": "Settings"
+  },
+  "scanner": {
+    "title": "Upload barcode image",
+    "hint": "Drag and drop or click to select -- JPG/PNG",
+    "decoding": "Decoding barcode...",
+    "fetching": "Fetching product data...",
+    "found": "Barcode found: {{code}}",
+    "failed": "Scan failed",
+    "tryAgain": "Try Again"
+  },
+  "hero": {
+    "title": "Scan. Compare. Reduce.",
+    "subtitle": "Discover the carbon footprint of Australian supermarket products and find eco-friendly alternatives."
+  },
+  "results": {
+    "barcodeInfo": "Barcode Information",
+    "carbonFootprint": "Carbon Footprint",
+    "acccCompliance": "ACCC Compliance",
+    "govData": "Government Data",
+    "alternatives": "Eco Alternatives",
+    "emissionComparison": "Emission Comparison",
+    "emissionBreakdown": "Emission Breakdown",
+    "code": "Code",
+    "type": "Type",
+    "method": "Method",
+    "confidence": "Confidence",
+    "origin": "Origin",
+    "transport": "Transport",
+    "distance": "Distance",
+    "australianProduct": "Australian Product",
+    "importedProduct": "Imported Product",
+    "noData": "No scan data",
+    "scanFirst": "Scan a product barcode first.",
+    "goToScanner": "Go to Scanner",
+    "scanAnother": "Scan Another",
+    "production": "Production",
+    "transportEmissions": "Transport",
+    "packaging": "Packaging",
+    "suggested": "Suggested"
+  },
+  "history": {
+    "title": "Scan History",
+    "scans": "Scans",
+    "co2Saved": "kg CO2 saved",
+    "clearHistory": "Clear History",
+    "noScans": "No scans yet.",
+    "startScanning": "Start Scanning"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "darkMode": "Dark Mode",
+    "darkModeDesc": "Reduce eye strain in low light",
+    "location": "Location",
+    "defaultCity": "Default City",
+    "defaultCityDesc": "Used for eco store search",
+    "data": "Data",
+    "scanHistory": "Scan History",
+    "scansStored": "{{count}} scans stored",
+    "clearHistory": "Clear History",
+    "about": "About",
+    "privacy": "Privacy Act 1988 Compliant | ACCC Guidelines | Zero data retention"
+  }
+}
