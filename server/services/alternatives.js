@@ -1,5 +1,5 @@
 // Local Alternatives Map for Australian Eco-friendly Products
-// Integrates with Google Maps API to show nearby eco-stores and alternatives
+// Uses Leaflet + OpenStreetMap (free, no API key required)
 
 class LocalAlternativesMap {
   constructor() {
@@ -38,7 +38,7 @@ class LocalAlternativesMap {
           type: 'organic_food_store',
           specialties: ['organic produce', 'bulk foods', 'eco products'],
           rating: 4.6,
-          carbonReductionScore: 8.5
+          carbonReductionScore: 8.5,
         },
         {
           name: 'The Source Bulk Foods',
@@ -48,7 +48,7 @@ class LocalAlternativesMap {
           type: 'bulk_food_store',
           specialties: ['bulk foods', 'package-free', 'zero waste'],
           rating: 4.4,
-          carbonReductionScore: 9.2
+          carbonReductionScore: 9.2,
         },
         {
           name: 'Harris Farm Markets',
@@ -58,8 +58,18 @@ class LocalAlternativesMap {
           type: 'farmers_market',
           specialties: ['local produce', 'imperfect picks', 'reduced food waste'],
           rating: 4.3,
-          carbonReductionScore: 7.8
-        }
+          carbonReductionScore: 7.8,
+        },
+        {
+          name: 'Naked Foods',
+          address: '478 Crown St, Surry Hills, NSW 2010',
+          lat: -33.8825,
+          lng: 151.2150,
+          type: 'bulk_food_store',
+          specialties: ['bulk foods', 'organic', 'package-free'],
+          rating: 4.5,
+          carbonReductionScore: 9.0,
+        },
       ],
       'Melbourne': [
         {
@@ -70,7 +80,7 @@ class LocalAlternativesMap {
           type: 'organic_food_store',
           specialties: ['organic', 'permaculture', 'community garden'],
           rating: 4.7,
-          carbonReductionScore: 9.0
+          carbonReductionScore: 9.0,
         },
         {
           name: 'The Wholefoods Warehouse',
@@ -80,7 +90,7 @@ class LocalAlternativesMap {
           type: 'bulk_food_store',
           specialties: ['organic bulk foods', 'local products'],
           rating: 4.5,
-          carbonReductionScore: 8.8
+          carbonReductionScore: 8.8,
         },
         {
           name: 'South Melbourne Market',
@@ -90,8 +100,18 @@ class LocalAlternativesMap {
           type: 'farmers_market',
           specialties: ['local producers', 'organic options', 'sustainable practices'],
           rating: 4.4,
-          carbonReductionScore: 7.5
-        }
+          carbonReductionScore: 7.5,
+        },
+        {
+          name: 'The Source Bulk Foods Melbourne',
+          address: '143 Sydney Rd, Brunswick, VIC 3056',
+          lat: -37.7610,
+          lng: 144.9580,
+          type: 'bulk_food_store',
+          specialties: ['bulk foods', 'package-free', 'zero waste'],
+          rating: 4.5,
+          carbonReductionScore: 9.1,
+        },
       ],
       'Brisbane': [
         {
@@ -102,7 +122,7 @@ class LocalAlternativesMap {
           type: 'organic_food_store',
           specialties: ['organic groceries', 'natural products'],
           rating: 4.5,
-          carbonReductionScore: 8.3
+          carbonReductionScore: 8.3,
         },
         {
           name: 'Jan Powers Farmers Markets',
@@ -112,8 +132,18 @@ class LocalAlternativesMap {
           type: 'farmers_market',
           specialties: ['local produce', 'seasonal products'],
           rating: 4.3,
-          carbonReductionScore: 7.9
-        }
+          carbonReductionScore: 7.9,
+        },
+        {
+          name: 'The Source Bulk Foods Brisbane',
+          address: '1/110 EDgar St, New Farm, QLD 4005',
+          lat: -27.4580,
+          lng: 153.0480,
+          type: 'bulk_food_store',
+          specialties: ['bulk foods', 'package-free', 'organic'],
+          rating: 4.4,
+          carbonReductionScore: 9.0,
+        },
       ],
       'Perth': [
         {
@@ -124,7 +154,7 @@ class LocalAlternativesMap {
           type: 'organic_food_store',
           specialties: ['organic', 'raw foods', 'sustainable practices'],
           rating: 4.6,
-          carbonReductionScore: 8.7
+          carbonReductionScore: 8.7,
         },
         {
           name: 'Kakulas Sisters',
@@ -134,9 +164,147 @@ class LocalAlternativesMap {
           type: 'bulk_food_store',
           specialties: ['bulk foods', 'local products', 'organic'],
           rating: 4.4,
-          carbonReductionScore: 8.5
-        }
-      ]
+          carbonReductionScore: 8.5,
+        },
+        {
+          name: 'The Source Bulk Foods Perth',
+          address: '226 Newcastle St, Northbridge, WA 6003',
+          lat: -31.9475,
+          lng: 115.8580,
+          type: 'bulk_food_store',
+          specialties: ['bulk foods', 'package-free', 'zero waste'],
+          rating: 4.5,
+          carbonReductionScore: 9.0,
+        },
+      ],
+      'Adelaide': [
+        {
+          name: 'The Source Bulk Foods Adelaide',
+          address: '2/187 Frome St, Adelaide, SA 5000',
+          lat: -34.9245,
+          lng: 138.6080,
+          type: 'bulk_food_store',
+          specialties: ['bulk foods', 'package-free', 'zero waste'],
+          rating: 4.5,
+          carbonReductionScore: 9.1,
+        },
+        {
+          name: 'Adelaide Central Market',
+          address: '44-60 Gouger St, Adelaide, SA 5000',
+          lat: -34.9290,
+          lng: 138.5945,
+          type: 'farmers_market',
+          specialties: ['local produce', 'artisan foods', 'seasonal products'],
+          rating: 4.6,
+          carbonReductionScore: 8.0,
+        },
+        {
+          name: 'Go Vita Adelaide',
+          address: '63 Grote St, Adelaide, SA 5000',
+          lat: -34.9310,
+          lng: 138.5960,
+          type: 'health_food_store',
+          specialties: ['organic', 'health foods', 'natural products'],
+          rating: 4.3,
+          carbonReductionScore: 8.2,
+        },
+      ],
+      'Canberra': [
+        {
+          name: 'The Source Bulk Foods Canberra',
+          address: '1/33 Dryburgh St, O\'Connor, ACT 2602',
+          lat: -35.2505,
+          lng: 149.1130,
+          type: 'bulk_food_store',
+          specialties: ['bulk foods', 'package-free', 'organic'],
+          rating: 4.4,
+          carbonReductionScore: 9.0,
+        },
+        {
+          name: 'Capital Region Farmers Market',
+          address: 'Exhibition Park, Flemington Rd, Mitchell, ACT 2911',
+          lat: -35.2250,
+          lng: 149.1480,
+          type: 'farmers_market',
+          specialties: ['local produce', 'seasonal', 'organic options'],
+          rating: 4.5,
+          carbonReductionScore: 8.5,
+        },
+        {
+          name: 'Honest to Goodness',
+          address: '17 Lathlain St, Belconnen, ACT 2617',
+          lat: -35.2370,
+          lng: 149.0710,
+          type: 'organic_food_store',
+          specialties: ['organic produce', 'wholefoods', 'eco products'],
+          rating: 4.3,
+          carbonReductionScore: 8.3,
+        },
+      ],
+      'Hobart': [
+        {
+          name: 'The Source Bulk Foods Hobart',
+          address: '174 Collins St, Hobart, TAS 7000',
+          lat: -42.8830,
+          lng: 147.3280,
+          type: 'bulk_food_store',
+          specialties: ['bulk foods', 'package-free', 'zero waste'],
+          rating: 4.4,
+          carbonReductionScore: 9.0,
+        },
+        {
+          name: 'Salamanca Market',
+          address: 'Salamanca Place, Hobart, TAS 7000',
+          lat: -42.8860,
+          lng: 147.3340,
+          type: 'farmers_market',
+          specialties: ['local produce', 'artisan foods', 'organic options'],
+          rating: 4.7,
+          carbonReductionScore: 8.8,
+        },
+        {
+          name: 'Tasmanian Wholefoods',
+          address: '140 Liverpool St, Hobart, TAS 7000',
+          lat: -42.8810,
+          lng: 147.3250,
+          type: 'organic_food_store',
+          specialties: ['organic', 'local products', 'wholefoods'],
+          rating: 4.3,
+          carbonReductionScore: 8.5,
+        },
+      ],
+      'Darwin': [
+        {
+          name: 'Rapid Creek Market',
+          address: 'Trower Rd, Rapid Creek, NT 0810',
+          lat: -12.3750,
+          lng: 130.8650,
+          type: 'farmers_market',
+          specialties: ['local produce', 'tropical fruits', 'seasonal'],
+          rating: 4.4,
+          carbonReductionScore: 8.0,
+        },
+        {
+          name: 'Greenie Bean Roasters',
+          address: '5 Caryota Crt, Coconut Grove, NT 0810',
+          lat: -12.4050,
+          lng: 130.8450,
+          type: 'organic_food_store',
+          specialties: ['organic coffee', 'fair trade', 'sustainable'],
+          rating: 4.3,
+          carbonReductionScore: 7.8,
+        },
+        {
+          name: 'Mindil Beach Markets',
+          address: 'Mindil Beach, Darwin, NT 0800',
+          lat: -12.4620,
+          lng: 130.8330,
+          type: 'farmers_market',
+          specialties: ['local produce', 'artisan foods', 'community'],
+          rating: 4.5,
+          carbonReductionScore: 7.5,
+        },
+      ],
     };
   }
 
@@ -254,37 +422,6 @@ class LocalAlternativesMap {
     };
 
     return distanceKm * emissionFactors[transportMode];
-  }
-
-  // Generate map HTML
-  generateMapHTML(center, stores, userLocation) {
-    const safe = (v) => typeof v === 'number' ? v : 0;
-    const safeStr = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-    const storeMarkers = stores.map(store =>
-      `new google.maps.Marker({ position: { lat: ${safe(store.lat)}, lng: ${safe(store.lng)} }, map: map, title: ${JSON.stringify(String(store.name || ''))}, icon: { url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2327ae60'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z'/%3E%3C/svg%3E", scaledSize: new google.maps.Size(32, 32) } });`
-    ).join('\n          ');
-
-    return `
-      <div id="eco-map" style="height: 400px; width: 100%; border-radius: 10px;"></div>
-      <script>
-        function initEcoMap() {
-          const mapCenter = { lat: ${safe(center.lat)}, lng: ${safe(center.lng)} };
-          const map = new google.maps.Map(document.getElementById('eco-map'), {
-            zoom: 12,
-            center: mapCenter,
-            styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }]
-          });
-          new google.maps.Marker({
-            position: { lat: ${safe(userLocation.lat)}, lng: ${safe(userLocation.lng)} },
-            map: map, title: "Your location",
-            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2 }
-          });
-          ${storeMarkers}
-        }
-      </script>
-      <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initEcoMap"></script>
-    `;
   }
 
   // Get store recommendations based on product category

@@ -79,6 +79,9 @@ body {
 /* Results */
 .results-header { text-align: center; margin-bottom: 2rem; }
 .results-header h2 { font-size: 1.8rem; }
+.results-header .product-image { width: 120px; height: 120px; object-fit: contain; border-radius: var(--radius); margin-bottom: 0.75rem; background: var(--color-bg-alt); }
+.store-marker { filter: hue-rotate(100deg); }
+.eco-map-card .leaflet-container { z-index: 1; }
 .brand { color: var(--color-text-muted); }
 .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
 .result-card {

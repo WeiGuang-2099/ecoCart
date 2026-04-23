@@ -1,10 +1,11 @@
 import { useLocation, Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AcccBadge from '../components/AcccBadge';
 import AlternativeCard from '../components/AlternativeCard';
 import CarbonChart from '../components/CarbonChart';
 import EmissionComparison from '../components/EmissionComparison';
+import EcoStoreMap from '../components/EcoStoreMap';
 import { addScanRecord } from '../utils/storage';
 
 export default function Results() {
@@ -28,12 +29,47 @@ export default function Results() {
     );
   }
 
-  const { barcode, carbonFootprint, alternatives, acccCompliance, governmentData } = data;
+  const { barcode, carbonFootprint, alternatives, acccCompliance, governmentData, openFoodFacts } = data;
   const productName = carbonFootprint?.productName || barcode?.code || 'Unknown product';
+  const productImage = openFoodFacts?.imageUrl || carbonFootprint?.image || null;
+
+  const [ecoStores, setEcoStores] = useState(null);
+  const [userLoc, setUserLoc] = useState(null);
+
+  useEffect(() => {
+    const city = localStorage.getItem('ecocart_city') || 'Sydney';
+    const cityCoords = {
+      Sydney: { lat: -33.8688, lng: 151.2093 },
+      Melbourne: { lat: -37.8136, lng: 144.9631 },
+      Brisbane: { lat: -27.4698, lng: 153.0251 },
+      Perth: { lat: -31.9505, lng: 115.8605 },
+      Adelaide: { lat: -34.9285, lng: 138.6007 },
+      Canberra: { lat: -35.2809, lng: 149.1300 },
+      Hobart: { lat: -42.8821, lng: 147.3272 },
+      Darwin: { lat: -12.4634, lng: 130.8456 },
+    };
+    const loc = cityCoords[city] || cityCoords.Sydney;
+    setUserLoc(loc);
+
+    fetch('/api/local-alternatives', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productCategory: carbonFootprint?.category || 'Food',
+        userLocation: loc,
+      }),
+    })
+      .then(r => r.json())
+      .then(d => { if (d.nearbyStores) setEcoStores(d.nearbyStores); })
+      .catch(() => {});
+  }, [carbonFootprint]);
 
   return (
     <div className="results">
       <section className="results-header">
+        {productImage && (
+          <img src={productImage} alt={productName} className="product-image" />
+        )}
         <h2>{productName}</h2>
         {carbonFootprint?.brand && <p className="brand">by {carbonFootprint.brand}</p>}
       </section>
@@ -121,6 +157,14 @@ export default function Results() {
             alternatives={alternatives}
           />
         </div>
+
+        {/* Eco Store Map */}
+        {ecoStores && ecoStores.length > 0 && userLoc && (
+          <div className="result-card eco-map-card">
+            <h3>Nearby Eco Stores</h3>
+            <EcoStoreMap stores={ecoStores} userLocation={userLoc} />
+          </div>
+        )}
       </div>
 
       <div className="results-actions">

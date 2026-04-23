@@ -12,7 +12,6 @@ const createAlternativesRoutes = require('./routes/alternatives');
 const pagesRoutes = require('./routes/pages');
 
 const { buildCarbonFootprint, generateEstimatedProfile } = require('./services/carbon');
-const { extractBarcode } = require('./services/barcode');
 const { getProductByBarcode, extractProductInfo } = require('./services/open-food-facts');
 const ACCCComplianceChecker = require('./services/accc');
 const AustralianDataIntegration = require('./services/gov-data');
@@ -41,7 +40,6 @@ function createApp() {
     defaultCategory: 'generic_food',
     defaultOrigin: (productMetadata.validOrigins && productMetadata.validOrigins[0]) || 'Australia/Victoria',
     carbonService: { buildCarbonFootprint, generateEstimatedProfile },
-    barcodeService: { extractBarcode },
     offService: { getProductByBarcode, extractProductInfo },
     acccService: new ACCCComplianceChecker(),
     govDataService: new AustralianDataIntegration(),

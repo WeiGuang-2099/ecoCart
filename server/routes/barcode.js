@@ -8,7 +8,7 @@ const yoloDetector = require('../services/yolo-detector');
 const imagePreprocess = require('../utils/image-preprocess');
 
 module.exports = function(deps) {
-  const { config, products, carbonService, barcodeService, acccService, govDataService, offService } = deps;
+  const { config, products, carbonService, acccService, govDataService, offService } = deps;
 
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -31,14 +31,9 @@ module.exports = function(deps) {
 
       const imageBuffer = req.file.buffer;
 
-      // Step 1: Try existing barcode extraction (stub for now, may be implemented later)
-      let barcodeResult;
-      try {
-        barcodeResult = await barcodeService.extractBarcode(imageBuffer);
-      } catch (e) {
-        console.error('Barcode extraction failed:', e.message);
-        barcodeResult = { detected: false, code: null, confidence: 0 };
-      }
+      // Step 1: Server-side barcode extraction not available;
+      // client must decode barcode and use /api/lookup-barcode instead
+      const barcodeResult = { detected: false, code: null, confidence: 0 };
 
       // Step 2: Preprocess image for YOLO
       let yoloResults = [];
