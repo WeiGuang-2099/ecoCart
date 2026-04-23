@@ -12,12 +12,15 @@
 
 ```mermaid
 graph TB
-    Browser[Browser / PWA] -->|Barcode Scan| API[Express API Server]
+    Browser[Browser / PWA] -->|Client Decode| API[Express API Server]
+    Browser -->|YOLO Fallback| API
     API --> Carbon[Carbon Service]
     API --> ACCC[ACCC Compliance Service]
     API --> OFF[Open Food Facts API]
     API --> Local[Local Alternatives Service]
     API --> Gov[Gov Data Service]
+    API --> YOLO[YOLOv8n Detector]
+    YOLO --> ONNX[ONNX Runtime]
     Carbon --> DB[Product Database]
 ```
 
@@ -25,7 +28,8 @@ The backend follows a layered architecture with dependency injection. Route hand
 
 ## Features
 
-- **Barcode scanning** -- Browser-native `BarcodeDetector` with ZXing WASM fallback; images never leave the device
+- **Barcode scanning** -- Multi-pass client-side decoding with 4 image preprocessing variants (grayscale+contrast, adaptive binarization, sharpening); server-side YOLOv8n fallback for difficult images
+- **Product recognition** -- YOLOv8n object detection (ONNX Runtime) identifies product categories from photos; locates barcode regions for targeted decoding
 - **Carbon footprint estimation** -- Production, transport, and packaging emissions based on per-category emission factors and configurable transport modes
 - **ACCC greenwashing detection** -- Flags vague or certification-required sustainability claims
 - **Open Food Facts integration** -- Enriches product data from the global open database
@@ -33,13 +37,14 @@ The backend follows a layered architecture with dependency injection. Route hand
 - **PWA support** -- Installable, works offline with cached assets
 - **Internationalization** -- English and Chinese UI via i18next
 - **Privacy-first** -- In-memory-only image processing, zero data retention, Privacy Act 1988 compliant
+- **Graceful degradation** -- Four-level fallback: client decode -> YOLO region decode -> YOLO category only -> manual entry prompt
 
 ## Tech Stack
 
 | Layer      | Technologies                                                       |
 |------------|--------------------------------------------------------------------|
-| Backend    | Node.js 18+, Express 4, Multer, Helmet, express-rate-limit        |
-| Frontend   | React 19, Vite 8, Chart.js, ZXing                                 |
+| Backend    | Node.js 18+, Express 4, ONNX Runtime, Sharp, Multer, Helmet       |
+| Frontend   | React 19, Vite 8, Chart.js, ZXing, Canvas preprocessing           |
 | Data       | 1 220+ Australian products, Open Food Facts API                    |
 | DevOps     | Docker, GitHub Actions CI, ESLint, Prettier, Jest                  |
 
@@ -51,12 +56,13 @@ ecoCart/
   server/
     app.js                    # Express app setup, DI container
     routes/
-      barcode.js              # Barcode scan and lookup endpoints
+      barcode.js              # Barcode scan, lookup, and YOLO pipeline endpoints
       alternatives.js         # Local alternatives endpoint
       pages.js                # Static page routes
     services/
       carbon.js               # Carbon footprint calculations
       barcode.js              # Barcode decoding logic
+      yolo-detector.js        # YOLOv8n ONNX inference (singleton, lazy-loaded)
       accc.js                 # ACCC greenwashing checks
       alternatives.js         # Local alternatives lookup
       gov-data.js             # Government data integration
@@ -67,6 +73,7 @@ ecoCart/
       error-handler.js        # Centralized error handling
     utils/
       helpers.js              # Shared utility functions
+      image-preprocess.js     # Sharp-based image preprocessing for ONNX + barcode cropping
     __tests__/
       api.test.js             # API integration tests
   client/
@@ -86,6 +93,9 @@ ecoCart/
   data/
     australian-products.json  # Product catalog (1 220+ items)
     australian-keywords.json  # OCR keyword heuristics
+  models/
+    README.md                 # Instructions to download YOLOv8n ONNX model
+    yolov8n.onnx              # YOLOv8n ONNX model (~12MB, not in git)
   scripts/
     generate-products.js      # Product data generator
   .github/
@@ -98,6 +108,7 @@ ecoCart/
 
 - Node.js 18 or later
 - npm 9 or later
+- Python 3.8+ (only for YOLO model export, one-time setup)
 
 ### Install
 
@@ -111,6 +122,10 @@ npm install
 
 # Install frontend dependencies
 cd client && npm install && cd ..
+
+# Download YOLOv8n ONNX model (requires Python + ultralytics)
+pip install ultralytics
+python -c "from ultralytics import YOLO; YOLO('yolov8n.pt').export(format='onnx'); import shutil; shutil.move('yolov8n.onnx', 'models/yolov8n.onnx')"
 ```
 
 ### Configure
@@ -153,11 +168,22 @@ The backend serves at `http://localhost:5000`. The Vite dev server (default port
 
 **Request:** `multipart/form-data` with an `image` field (max 5 MB).
 
+The server runs YOLOv8n object detection on the uploaded image, extracts barcode candidate regions, and returns detection results along with carbon data.
+
 **Response (abbreviated):**
 
 ```json
 {
-  "barcode": { "detected": true, "code": "9330777000015", "type": "EAN-13" },
+  "barcode": { "detected": false, "code": null },
+  "yoloDetection": {
+    "category": "bottle",
+    "confidence": 0.87,
+    "bbox": { "x": 120, "y": 50, "w": 300, "h": 450 },
+    "allDetections": []
+  },
+  "barcodeRegions": [
+    { "base64": "...", "bbox": { "x": 120, "y": 330, "w": 300, "h": 135 } }
+  ],
   "carbonFootprint": {
     "co2_kg": 1.23,
     "production_emissions": 1.1,
@@ -198,11 +224,23 @@ The backend serves at `http://localhost:5000`. The Vite dev server (default port
 The Express application is assembled in `server/app.js` using a dependency-injection pattern:
 
 1. **Config** is loaded from `config/index.js` and `.env`.
-2. **Services** (carbon, barcode, ACCC, alternatives, gov-data, open-food-facts) are instantiated with config and data.
+2. **Services** (carbon, barcode, YOLO detector, ACCC, alternatives, gov-data, open-food-facts) are instantiated with config and data.
 3. **Routes** receive service references through a `deps` object, avoiding global singletons.
 4. **Middleware** layers handle validation, security headers, rate limiting, and error normalization.
+5. **YOLO detector** is a singleton that lazily loads the ONNX model on first inference request, then caches it in memory.
 
 This structure keeps every module independently testable -- services can be mocked or stubbed without touching the Express app.
+
+### Scan Flow
+
+The barcode scanning pipeline uses a four-level fallback strategy:
+
+1. **Client multi-pass decode** -- 4 Canvas-preprocessed image variants (original, grayscale+contrast, adaptive binarization, sharpening) each tried with native BarcodeDetector then ZXing WASM
+2. **YOLO region decode** -- If client decode fails, upload image to server; YOLOv8n detects products and crops barcode candidate regions; client tries decoding each cropped region
+3. **YOLO category only** -- If no barcode found in regions, display detected product category with confidence score and prompt manual barcode entry
+4. **Manual retry** -- If everything fails, ask user to retake the photo
+
+When client-side decoding succeeds, the image is also sent to the server asynchronously for YOLO product category enrichment (fire-and-forget).
 
 ## Testing
 
