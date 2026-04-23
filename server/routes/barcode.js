@@ -4,6 +4,9 @@ const multer = require('multer');
 const { validationResult } = require('express-validator');
 const { barcodeValidation } = require('../middleware/validation');
 
+const yoloDetector = require('../services/yolo-detector');
+const imagePreprocess = require('../utils/image-preprocess');
+
 module.exports = function(deps) {
   const { config, products, carbonService, barcodeService, acccService, govDataService, offService } = deps;
 
@@ -28,7 +31,47 @@ module.exports = function(deps) {
 
       const imageBuffer = req.file.buffer;
 
-      const barcodeResult = await barcodeService.extractBarcode(imageBuffer);
+      // Step 1: Try existing barcode extraction (stub for now, may be implemented later)
+      let barcodeResult;
+      try {
+        barcodeResult = await barcodeService.extractBarcode(imageBuffer);
+      } catch (e) {
+        console.error('Barcode extraction failed:', e.message);
+        barcodeResult = { detected: false, code: null, confidence: 0 };
+      }
+
+      // Step 2: Preprocess image for YOLO
+      let yoloResults = [];
+      let tensorMeta = null;
+      try {
+        const { tensor, meta } = await imagePreprocess.prepareForYolo(imageBuffer);
+        tensorMeta = meta;
+
+        // Step 3: Run YOLO detection
+        yoloResults = await yoloDetector.detect(tensor, meta);
+      } catch (e) {
+        console.error('YOLO detection failed:', e.message);
+      }
+
+      // Step 4: Extract barcode candidate regions from detections
+      const barcodeRegions = tensorMeta
+        ? imagePreprocess.extractBarcodeRegions(yoloResults, tensorMeta.origWidth, tensorMeta.origHeight)
+        : [];
+
+      // Step 5: Crop each region to base64 PNGs
+      const regionImages = [];
+      for (const region of barcodeRegions) {
+        try {
+          const { base64, width, height } = await imagePreprocess.cropRegion(imageBuffer, region);
+          regionImages.push({ base64, bbox: region, width, height });
+        } catch (e) {
+          console.error('Crop failed:', e.message);
+        }
+      }
+
+      // Step 6: Get product category from best detection
+      const bestDetection = yoloResults.length > 0 ? yoloResults[0] : null;
+
       const ecoClaims = { claims: [] }; // client side does not upload image, default to empty
 
       // Build carbon deps for the service calls
@@ -76,6 +119,13 @@ module.exports = function(deps) {
 
       res.json({
         barcode: barcodeResult,
+        yoloDetection: bestDetection ? {
+          category: bestDetection.label,
+          confidence: bestDetection.confidence,
+          bbox: bestDetection.bbox,
+          allDetections: yoloResults
+        } : null,
+        barcodeRegions: regionImages,
         ecoClaims,
         carbonFootprint,
         alternatives: findEcoAlternatives(products, carbonFootprint),
