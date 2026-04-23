@@ -64,6 +64,16 @@ uploads/
 
 # YOLO model files (large binaries)
 models/*.onnx
+*.pt
+
+# Claude Code
+.claude/
+
+# Trae IDE
+.trae/
+
+# Plan docs
+plan.md
 
 # Optional npm cache directory
 .npm
