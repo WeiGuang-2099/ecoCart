@@ -26,7 +26,7 @@ The backend follows a layered architecture with dependency injection. Route hand
 ## Features
 
 - **Barcode scanning** -- Browser-native `BarcodeDetector` with ZXing WASM fallback; images never leave the device
-- **Carbon footprint estimation** -- Production, transport, and packaging emissions using ANZ LCA factors and NGA transport data
+- **Carbon footprint estimation** -- Production, transport, and packaging emissions based on per-category emission factors and configurable transport modes
 - **ACCC greenwashing detection** -- Flags vague or certification-required sustainability claims
 - **Open Food Facts integration** -- Enriches product data from the global open database
 - **Local eco alternatives** -- Nearby refill, organic, and zero-waste stores with comparison metrics
@@ -39,8 +39,8 @@ The backend follows a layered architecture with dependency injection. Route hand
 | Layer      | Technologies                                                       |
 |------------|--------------------------------------------------------------------|
 | Backend    | Node.js 18+, Express 4, Multer, Helmet, express-rate-limit        |
-| Frontend   | React 19, Vite 6, Chart.js, ZXing, Bootstrap 5                    |
-| Data       | 1 220+ Australian products, Open Food Facts API, ANZ LCA factors   |
+| Frontend   | React 19, Vite 8, Chart.js, ZXing                                 |
+| Data       | 1 220+ Australian products, Open Food Facts API                    |
 | DevOps     | Docker, GitHub Actions CI, ESLint, Prettier, Jest                  |
 
 ## Project Structure
@@ -120,7 +120,7 @@ Create a `.env` file in the project root:
 ```env
 PORT=5000
 NODE_ENV=development
-OPENAI_API_KEY=          # Optional: only needed if cloud OCR is enabled
+CORS_ORIGIN=http://localhost:5173   # Comma-separated allowed origins for production
 ```
 
 ### Run
@@ -143,7 +143,7 @@ The backend serves at `http://localhost:5000`. The Vite dev server (default port
 | Method | Path                     | Description                                              |
 |--------|--------------------------|----------------------------------------------------------|
 | POST   | `/api/scan-barcode`      | Upload a barcode image; returns carbon data, claims, and alternatives |
-| GET    | `/api/lookup-barcode`    | Lookup a barcode by query parameter `code`               |
+| GET    | `/api/lookup-barcode`    | Lookup a barcode by query parameter `barcode`            |
 | POST   | `/api/lookup-barcode`    | Submit a decoded barcode; same response as scan without image upload |
 | POST   | `/api/local-alternatives`| Find nearby eco stores by category and location          |
 | GET    | `/`                      | Serve the React frontend                                 |
@@ -158,10 +158,22 @@ The backend serves at `http://localhost:5000`. The Vite dev server (default port
 ```json
 {
   "barcode": { "detected": true, "code": "9330777000015", "type": "EAN-13" },
-  "carbonFootprint": { "totalKg": 1.23 },
-  "ecoClaims": { "claims": [], "acccCompliant": true },
+  "carbonFootprint": {
+    "co2_kg": 1.23,
+    "production_emissions": 1.1,
+    "transport_emissions": 0.08,
+    "packaging_emissions": 0.05
+  },
+  "ecoClaims": { "claims": [] },
   "alternatives": [],
-  "acccCompliance": { "summary": "No greenwashing concerns" }
+  "acccCompliance": {
+    "acccCompliance": {
+      "status": "compliant",
+      "riskLevel": "low",
+      "warnings": [],
+      "recommendations": []
+    }
+  }
 }
 ```
 
@@ -178,7 +190,7 @@ The backend serves at `http://localhost:5000`. The Vite dev server (default port
 **Request:**
 
 ```json
-{ "productCategory": "dairy", "userLocation": { "lat": -33.8688, "lng": 151.2093 } }
+{ "productCategory": "Food", "userLocation": { "lat": -33.8688, "lng": 151.2093 } }
 ```
 
 ## Architecture Details
@@ -243,12 +255,11 @@ GitHub Actions runs linting and tests on every push. The workflow is defined in 
 
 ## Data Sources
 
-- **AFSIS** -- Barcode/category mapping, product categories, origin locations
-- **ANZ LCA Database v3.1** -- Emission factors and default weights
-- **National Freight Data Hub** -- Distance assumptions
-- **NGA Table 5.2** -- Transport emission factors
-- **Australian Packaging Covenant Standard v2.1** -- Packaging emission factor
-- **Open Food Facts** -- Global open product database
+- **Local product database** -- 1 220+ Australian supermarket products with per-category emission factors, origin locations, and default weights (curated dataset)
+- **Open Food Facts** -- Global open product database for barcode enrichment
+- **Government data service** -- Australian product origin and certification lookup (barcode prefix-based heuristics; real AFSIS integration pending government API access)
+- **Transport factors** -- Mode-specific emission rates (air, sea, rail, road) used for freight estimation
+- **City distance table** -- Major Australian inter-city distances for domestic freight calculation
 
 ## License
 
