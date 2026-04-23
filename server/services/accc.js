@@ -149,7 +149,7 @@ class ACCCComplianceChecker {
     return {
       validClaims: validStandards,
       invalidClaims: invalidClaims,
-      complianceRate: (validStandards.length / claims.length * 100).toFixed(1)
+      complianceRate: claims.length > 0 ? (validStandards.length / claims.length * 100).toFixed(1) : '100.0'
     };
   }
 

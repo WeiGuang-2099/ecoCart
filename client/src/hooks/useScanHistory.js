@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 
 const HISTORY_KEY = 'ecocart_scan_history';
 const MAX_HISTORY = 50;
@@ -18,6 +18,27 @@ function saveHistory(items) {
 
 export function useScanHistory() {
   const [history, setHistory] = useState(() => loadHistory());
+
+  // Sync with external localStorage writes (e.g. addScanRecord from Results.jsx)
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === HISTORY_KEY) {
+        setHistory(loadHistory());
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const totalReduction = useMemo(() => {
+    return history.reduce((total, record) => {
+      const maxReduction = Math.max(
+        ...(record.alternatives || []).map(a => a.carbonReduction || 0),
+        0
+      );
+      return total + maxReduction;
+    }, 0);
+  }, [history]);
 
   const add = useCallback((scan) => {
     const entry = {
@@ -45,5 +66,5 @@ export function useScanHistory() {
     localStorage.removeItem(HISTORY_KEY);
   }, []);
 
-  return { history, add, remove, clear };
+  return { history, totalReduction, add, remove, clear };
 }

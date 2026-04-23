@@ -415,6 +415,14 @@
     <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
     <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
     <script>
+        // ===== HTML Escaping (XSS Prevention) =====
+        function esc(str) {
+            if (str == null) return '';
+            const d = document.createElement('div');
+            d.textContent = String(str);
+            return d.innerHTML;
+        }
+
         let totalCarbonReduction = 0;
         let currentScanData = null;
 
@@ -427,12 +435,12 @@
             show(message, type = 'info', duration = 3000) {
                 const toast = document.createElement('div');
                 toast.className = `toast-notification toast-${type}`;
-                
+
                 const icon = this.getIcon(type);
-                toast.innerHTML = `
-                    <i class="bi ${icon}"></i>
-                    <span>${message}</span>
-                `;
+                const msgSpan = document.createElement('span');
+                msgSpan.textContent = message;
+                toast.innerHTML = `<i class="bi ${icon}"></i> `;
+                toast.appendChild(msgSpan);
                 
                 this.container.appendChild(toast);
 
@@ -682,9 +690,7 @@
 
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    // Apply real-time image preprocessing
-                    const processedImageSrc = preprocessImage(e.target.result);
-                    previewImg.src = processedImageSrc;
+                    previewImg.src = e.target.result;
                     imagePreview.style.display = 'block';
                     uploadArea.style.display = 'none';
                     
@@ -710,67 +716,8 @@
             }
         }
 
-        // Real-time image preprocessing
-        function preprocessImage(imageSrc) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            
-            img.onload = function() {
-                // Set canvas size
-                canvas.width = img.width;
-                canvas.height = img.height;
-                
-                // Draw original image
-                ctx.drawImage(img, 0, 0);
-                
-                // Apply preprocessing filters
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const processedData = applyImageFilters(imageData);
-                ctx.putImageData(processedData, 0, 0);
-            };
-            
-            img.src = imageSrc;
-            return imageSrc; // Return original for now, processed in background
-        }
-
-        // Apply image filters for better recognition
-        function applyImageFilters(imageData) {
-            const data = imageData.data;
-            
-            // Convert to grayscale
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-                data[i] = gray;     // Red
-                data[i + 1] = gray; // Green
-                data[i + 2] = gray; // Blue
-                // Alpha remains unchanged
-            }
-            
-            // Enhance contrast
-            const contrast = 1.5;
-            for (let i = 0; i < data.length; i += 4) {
-                data[i] = ((data[i] - 128) * contrast) + 128;
-                data[i + 1] = ((data[i + 1] - 128) * contrast) + 128;
-                data[i + 2] = ((data[i + 2] - 128) * contrast) + 128;
-            }
-            
-            // Normalize brightness
-            let min = 255, max = 0;
-            for (let i = 0; i < data.length; i += 4) {
-                min = Math.min(min, data[i]);
-                max = Math.max(max, data[i]);
-            }
-            
-            const range = max - min;
-            for (let i = 0; i < data.length; i += 4) {
-                data[i] = ((data[i] - min) / range) * 255;
-                data[i + 1] = ((data[i + 1] - min) / range) * 255;
-                data[i + 2] = ((data[i + 2] - min) / range) * 255;
-            }
-            
-            return imageData;
-        }
+        // Real-time image preprocessing (removed -- was async but returned
+        // original src immediately, so canvas processing result was never used)
 
         // Show preprocessing status
         function showPreprocessingStatus() {
@@ -1065,25 +1012,25 @@
                     barcodeHtml += `
                         <div class="text-center mb-3">
                             <div class="product-image d-inline-block">
-                                <img src="${productImage}" alt="${productName}" 
+                                <img src="${esc(productImage)}" alt="${esc(productName)}"
                                      class="img-fluid rounded" style="max-height: 200px; max-width: 200px; object-fit: cover;">
                             </div>
-                            <p class="mt-2 mb-0"><strong>${productName}</strong></p>
+                            <p class="mt-2 mb-0"><strong>${esc(productName)}</strong></p>
                         </div>
                     `;
                 }
-                
+
                 barcodeHtml += `
                     <div class="mb-2">
-                        <p><strong> Australian Barcode:</strong> ${data.barcode.code}</p>
-                        <p><strong>Detection Method:</strong> ${data.barcode.detectionMethod}</p>
-                        <p><strong>Recognition Confidence:</strong> ${(data.barcode.confidence * 100).toFixed(1)}%</p>
+                        <p><strong> Australian Barcode:</strong> ${esc(data.barcode.code)}</p>
+                        <p><strong>Detection Method:</strong> ${esc(data.barcode.detectionMethod)}</p>
+                        <p><strong>Recognition Confidence:</strong> ${(Number(data.barcode.confidence) * 100).toFixed(1)}%</p>
                         <div class="confidence-meter">
-                            <div class="confidence-fill" style="width: ${data.barcode.confidence * 100}%"></div>
+                            <div class="confidence-fill" style="width: ${Number(data.barcode.confidence) * 100}%"></div>
                         </div>
                         ${data.barcode.isAustralian ? '<span class="badge bg-success me-2">Australian Product</span>' : '<span class="badge bg-warning me-2">Imported Product</span>'}
-                        ${data.barcode.type ? `<span class="badge bg-info me-2">${data.barcode.type}</span>` : ''}
-                        ${data.barcode.quality ? `<span class="badge bg-secondary">Quality: ${data.barcode.quality}</span>` : ''}
+                        ${data.barcode.type ? `<span class="badge bg-info me-2">${esc(data.barcode.type)}</span>` : ''}
+                        ${data.barcode.quality ? `<span class="badge bg-secondary">Quality: ${esc(data.barcode.quality)}</span>` : ''}
                     </div>
                 </div>`;
                 
@@ -1094,8 +1041,8 @@
 
             // Eco claims with ACCC compliance
             const ecoClaimsList = data.ecoClaims?.claims || [];
-            const ecoClaimsHtml = ecoClaimsList.length > 0 ? 
-                ecoClaimsList.map(claim => `<span class="eco-badge">${claim}</span>`).join('') :
+            const ecoClaimsHtml = ecoClaimsList.length > 0 ?
+                ecoClaimsList.map(claim => `<span class="eco-badge">${esc(claim)}</span>`).join('') :
                 '<p class="text-muted">No environmental claims found</p>';
             document.getElementById('ecoClaims').innerHTML = ecoClaimsHtml;
 
@@ -1104,10 +1051,10 @@
                 const acccHtml = `
                     <div class="alert ${data.acccCompliance.acccCompliance.status === 'compliant' ? 'alert-success' : 'alert-warning'}">
                         <h6><i class="bi bi-shield-exclamation"></i> ACCC Compliance Status</h6>
-                        <p><strong>Status:</strong> ${data.acccCompliance.acccCompliance.status}</p>
-                        <p><strong>Risk level:</strong> ${data.acccCompliance.acccCompliance.riskLevel}</p>
-                        ${data.acccCompliance.acccCompliance.warnings.length > 0 ? 
-                            `<p><strong>Warnings:</strong></p><ul>${data.acccCompliance.acccCompliance.warnings.map(w => `<li>${w.message}</li>`).join('')}</ul>` : ''}
+                        <p><strong>Status:</strong> ${esc(data.acccCompliance.acccCompliance.status)}</p>
+                        <p><strong>Risk level:</strong> ${esc(data.acccCompliance.acccCompliance.riskLevel)}</p>
+                        ${data.acccCompliance.acccCompliance.warnings.length > 0 ?
+                            `<p><strong>Warnings:</strong></p><ul>${data.acccCompliance.acccCompliance.warnings.map(w => `<li>${esc(w.message)}</li>`).join('')}</ul>` : ''}
                     </div>
                 `;
                 document.getElementById('acccCompliance').innerHTML = acccHtml;
@@ -1116,44 +1063,44 @@
             // Enhanced carbon footprint with Australian data and emission breakdown
             const carbonDetails = [];
             if (productProfile.product_category) {
-                carbonDetails.push(`<li><strong>AFSIS Category:</strong> ${productProfile.product_category}</li>`);
+                carbonDetails.push(`<li><strong>AFSIS Category:</strong> ${esc(productProfile.product_category)}</li>`);
             }
             if (productProfile.origin_location) {
-                carbonDetails.push(`<li><strong>Origin location:</strong> ${productProfile.origin_location}</li>`);
+                carbonDetails.push(`<li><strong>Origin location:</strong> ${esc(productProfile.origin_location)}</li>`);
             }
             if (productProfile.weight_kg) {
                 const weightLabel = `${Number(productProfile.weight_kg).toFixed(2)} kg${productProfile.weight_source === 'estimated' ? ' (estimated value)' : ''}`;
-                carbonDetails.push(`<li><strong>Unit weight:</strong> ${weightLabel}</li>`);
+                carbonDetails.push(`<li><strong>Unit weight:</strong> ${esc(weightLabel)}</li>`);
             }
             if (productProfile.emission_factor) {
-                carbonDetails.push(`<li><strong>Emission factor:</strong> ${productProfile.emission_factor.toFixed(2)} kg CO2e/kg</li>`);
+                carbonDetails.push(`<li><strong>Emission factor:</strong> ${Number(productProfile.emission_factor).toFixed(2)} kg CO2e/kg</li>`);
             }
             if (productProfile.production_method) {
-                carbonDetails.push(`<li><strong>Production method:</strong> ${translateProduction(productProfile.production_method)}</li>`);
+                carbonDetails.push(`<li><strong>Production method:</strong> ${esc(translateProduction(productProfile.production_method))}</li>`);
             }
             if (productProfile.packaging) {
-                carbonDetails.push(`<li><strong>Packaging:</strong> ${productProfile.packaging}</li>`);
+                carbonDetails.push(`<li><strong>Packaging:</strong> ${esc(productProfile.packaging)}</li>`);
             }
             if (productProfile.distance_km) {
-                carbonDetails.push(`<li><strong>Transport distance:</strong> ${productProfile.distance_km} km</li>`);
+                carbonDetails.push(`<li><strong>Transport distance:</strong> ${Number(productProfile.distance_km)} km</li>`);
             }
             if (productProfile.transport_method) {
-                carbonDetails.push(`<li><strong>Transport mode:</strong> ${translateTransport(productProfile.transport_method)}</li>`);
+                carbonDetails.push(`<li><strong>Transport mode:</strong> ${esc(translateTransport(productProfile.transport_method))}</li>`);
             }
             if (productProfile.transport_factor) {
-                carbonDetails.push(`<li><strong>Transport factor:</strong> ${productProfile.transport_factor} kg CO2e / tonne-km</li>`);
+                carbonDetails.push(`<li><strong>Transport factor:</strong> ${Number(productProfile.transport_factor)} kg CO2e / tonne-km</li>`);
             }
             if (productProfile.adjustment_factor && productProfile.adjustment_factor !== 1) {
-                carbonDetails.push(`<li><strong>Adjustment factor:</strong> ${productProfile.adjustment_factor} (perishable air freight)</li>`);
+                carbonDetails.push(`<li><strong>Adjustment factor:</strong> ${Number(productProfile.adjustment_factor)} (perishable air freight)</li>`);
             }
             if (productProfile.certifications && productProfile.certifications.length) {
-                carbonDetails.push(`<li><strong>Certifications:</strong> ${productProfile.certifications.join(', ')}</li>`);
+                carbonDetails.push(`<li><strong>Certifications:</strong> ${esc(productProfile.certifications.join(', '))}</li>`);
             }
             if (productProfile.ecoClaims && productProfile.ecoClaims.length) {
-                carbonDetails.push(`<li><strong>Eco labels:</strong> ${productProfile.ecoClaims.join(', ')}</li>`);
+                carbonDetails.push(`<li><strong>Eco labels:</strong> ${esc(productProfile.ecoClaims.join(', '))}</li>`);
             }
             if (productProfile.weight_note) {
-                carbonDetails.push(`<li><strong>Weight note:</strong> ${productProfile.weight_note}</li>`);
+                carbonDetails.push(`<li><strong>Weight note:</strong> ${esc(productProfile.weight_note)}</li>`);
             }
 
             const componentBreakdown = `
@@ -1170,12 +1117,12 @@
                 <div class="text-center mb-3">
                     <div class="carbon-score">${productProfile.co2_kg?.toFixed ? productProfile.co2_kg.toFixed(2) : '0.00'} kg</div>
                     <p class="text-muted">Australian carbon footprint</p>
-                    <p class="mb-0"><strong>${productName}</strong></p>
+                    <p class="mb-0"><strong>${esc(productName)}</strong></p>
                 </div>
-                <p><strong>Data source:</strong> ${productProfile.source || 'afsis-mapped'}</p>
-                ${productProfile.category ? `<p><strong>Retail category:</strong> ${productProfile.category}</p>` : ''}
-                ${productProfile.brand ? `<p><strong>Brand:</strong> ${productProfile.brand}</p>` : ''}
-                ${productProfile.origin ? `<p><strong>Origin description:</strong> ${productProfile.origin}</p>` : ''}
+                <p><strong>Data source:</strong> ${esc(productProfile.source || 'afsis-mapped')}</p>
+                ${productProfile.category ? `<p><strong>Retail category:</strong> ${esc(productProfile.category)}</p>` : ''}
+                ${productProfile.brand ? `<p><strong>Brand:</strong> ${esc(productProfile.brand)}</p>` : ''}
+                ${productProfile.origin ? `<p><strong>Origin description:</strong> ${esc(productProfile.origin)}</p>` : ''}
                 ${carbonDetails.length ? `<ul class="mb-0">${carbonDetails.join('')}</ul>` : ''}
                 ${componentBreakdown}
             `;
@@ -1185,9 +1132,9 @@
             if (data.governmentData && data.governmentData.afsisData) {
                 const govHtml = `
                     <p><strong>?AFSIS data:</strong> Verified</p>
-                    <p><strong>Product origin:</strong> ${data.governmentData.afsisData.productOrigin.country}</p>
-                    <p><strong>Australian certifications:</strong> ${data.governmentData.afsisData.certifications.join(', ') || 'None'}</p>
-                    <p><strong>Data quality:</strong> ${data.governmentData.dataQuality.afsisReliability}</p>
+                    <p><strong>Product origin:</strong> ${esc(data.governmentData.afsisData.productOrigin.country)}</p>
+                    <p><strong>Australian certifications:</strong> ${esc(data.governmentData.afsisData.certifications.join(', ')) || 'None'}</p>
+                    <p><strong>Data quality:</strong> ${esc(data.governmentData.dataQuality.afsisReliability)}</p>
                 `;
                 document.getElementById('governmentData').innerHTML = govHtml;
             }
@@ -1196,13 +1143,13 @@
             const alternativesList = data.alternatives || [];
             const alternativesHtml = alternativesList.map(alt => `
                 <div class="alternative-card">
-                    <h6>${alt.name}</h6>
-                    <p class="mb-2">${alt.description}</p>
-                    ${alt.australianContext ? `<small class="text-muted d-block">${alt.australianContext}</small>` : ''}
-                    ${alt.exampleBrands ? `<small class="text-info d-block">Suggested brands: ${alt.exampleBrands.join(', ')}</small>` : ''}
+                    <h6>${esc(alt.name)}</h6>
+                    <p class="mb-2">${esc(alt.description)}</p>
+                    ${alt.australianContext ? `<small class="text-muted d-block">${esc(alt.australianContext)}</small>` : ''}
+                    ${alt.exampleBrands ? `<small class="text-info d-block">Suggested brands: ${esc(alt.exampleBrands.join(', '))}</small>` : ''}
                     <div class="d-flex justify-content-between align-items-center mt-2">
-                        <span class="text-success"><strong>Reduce ${alt.carbonReduction.toFixed(2)} kg CO2</strong></span>
-                        <span class="badge bg-secondary">${alt.priceDiff}</span>
+                        <span class="text-success"><strong>Reduce ${Number(alt.carbonReduction).toFixed(2)} kg CO2</strong></span>
+                        <span class="badge bg-secondary">${esc(alt.priceDiff)}</span>
                     </div>
                 </div>
             `).join('');
@@ -1267,14 +1214,14 @@
         function displayLocalAlternatives(data) {
             const html = `
                 <div class="mt-3">
-                    <p><strong> Search location:</strong> ${data.searchLocation.city}</p>
-                    <p><strong> Stores found:</strong> ${data.totalStoresFound}</p>
+                    <p><strong> Search location:</strong> ${esc(data.searchLocation.city)}</p>
+                    <p><strong> Stores found:</strong> ${Number(data.totalStoresFound)}</p>
                     ${data.recommendations.map(store => `
                         <div class="border rounded p-2 mb-2">
-                            <h6>${store.name}</h6>
-                            <small class="text-muted d-block"> ${store.address}</small>
-                            <small class="text-success d-block"> Carbon reduction score: ${store.carbonReductionScore}/10</small>
-                            <small class="text-info d-block">?${store.rating}/5</small>
+                            <h6>${esc(store.name)}</h6>
+                            <small class="text-muted d-block"> ${esc(store.address)}</small>
+                            <small class="text-success d-block"> Carbon reduction score: ${Number(store.carbonReductionScore)}/10</small>
+                            <small class="text-info d-block">?${Number(store.rating)}/5</small>
                         </div>
                     `).join('')}
                 </div>

@@ -59,7 +59,14 @@ function createApp() {
   applySecurityMiddleware(app);
 
   // Core middleware
-  app.use(cors());
+  const corsOptions = {
+    origin: config.nodeEnv === 'production'
+      ? [process.env.CORS_ORIGIN].filter(Boolean)
+      : true,
+    methods: ['GET', 'POST'],
+    credentials: true
+  };
+  app.use(cors(corsOptions));
   app.use(express.json());
   app.use(express.static('public'));
 
@@ -74,6 +81,13 @@ function createApp() {
   app.use(createBarcodeRoutes(deps));
   app.use(createAlternativesRoutes(deps));
   app.use(pagesRoutes);
+
+  // SPA fallback: serve index.html for any non-API GET request
+  // so that React Router can handle client-side routing
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+  });
 
   // 404 handler
   app.use((req, res) => {

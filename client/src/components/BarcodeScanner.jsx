@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function BarcodeScanner() {
@@ -6,7 +6,15 @@ export default function BarcodeScanner() {
   const [scanning, setScanning] = useState(false);
   const [status, setStatus] = useState('');
   const fileRef = useRef();
+  const previewUrlRef = useRef(null);
   const navigate = useNavigate();
+
+  // Clean up object URL on unmount or when preview changes
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
 
   async function compressImage(file, maxWidth = 1200, quality = 0.8) {
     return new Promise((resolve, reject) => {
@@ -64,7 +72,10 @@ export default function BarcodeScanner() {
   async function handleFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
 
-    setPreview(URL.createObjectURL(file));
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const url = URL.createObjectURL(file);
+    previewUrlRef.current = url;
+    setPreview(url);
     setScanning(true);
     setStatus('Decoding barcode...');
 
@@ -87,7 +98,12 @@ export default function BarcodeScanner() {
       }
 
       const data = await res.json();
-      data.barcode = { ...data.barcode, detectionMethod: decoded.method, confidence: decoded.confidence };
+      // Merge client detection info without overwriting server-computed confidence
+      data.barcode = {
+        ...data.barcode,
+        detectionMethod: decoded.method,
+        clientConfidence: decoded.confidence
+      };
       navigate('/results', { state: { scanData: data } });
     } catch (err) {
       setStatus(err.message || 'Scan failed');

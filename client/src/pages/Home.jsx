@@ -1,11 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import BarcodeScanner from '../components/BarcodeScanner';
 
 export default function Home() {
+  const { t } = useTranslation();
   return (
     <div className="home">
       <section className="hero">
-        <h2>Scan. Compare. Reduce.</h2>
-        <p>Discover the carbon footprint of Australian supermarket products and find eco-friendly alternatives.</p>
+        <h2>{t('hero.title')}</h2>
+        <p>{t('hero.subtitle')}</p>
       </section>
       <BarcodeScanner />
     </div>

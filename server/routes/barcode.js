@@ -212,21 +212,40 @@ module.exports = function(deps) {
   return router;
 };
 
-// Helper: find eco alternatives (extracted from server.js)
+// Helper: find eco alternatives based on actual product carbon profile
 function findEcoAlternatives(products, carbonFootprint) {
   const baseCarbon = carbonFootprint.co2_kg;
+  const isLocal = /australia/i.test(carbonFootprint.origin || '');
+  const transportKm = carbonFootprint.distance_km || 0;
+
+  // Calculate dynamic reductions based on product profile
+  const localReduction = isLocal
+    ? baseCarbon * 0.05  // Already local, small improvement from farmers market
+    : Math.max(baseCarbon * 0.4, transportKm * 0.0001); // Imported: big gain from going local
+
+  const organicReduction = baseCarbon * 0.3;
+
+  const packagingReduction = carbonFootprint.packaging_emissions || baseCarbon * 0.1;
+
+  const isPlantCandidate = /meat|dairy|beef|chicken|pork|lamb|milk|cheese/i.test(
+    (carbonFootprint.category || '') + (carbonFootprint.productName || '')
+  );
+  const plantReduction = isPlantCandidate
+    ? baseCarbon * 0.5
+    : baseCarbon * 0.15;
+
   return [
     {
       name: products.alternatives.localProduce.title,
-      carbonReduction: products.alternatives.localProduce.averageReduction,
+      carbonReduction: Math.round(localReduction * 1000) / 1000,
       description: products.alternatives.localProduce.description,
-      priceDiff: '+5%',
+      priceDiff: isLocal ? '+2%' : '+5%',
       australianContext: 'Support local farms, reduce food miles',
       exampleBrands: ['Macro Local', 'Coles Local', 'Woolworths Local']
     },
     {
       name: products.alternatives.organic.title,
-      carbonReduction: baseCarbon * 0.3,
+      carbonReduction: Math.round(organicReduction * 1000) / 1000,
       description: products.alternatives.organic.description,
       priceDiff: '+15%',
       australianContext: 'Australian Certified Organic (ACO) standards',
@@ -234,7 +253,7 @@ function findEcoAlternatives(products, carbonFootprint) {
     },
     {
       name: products.alternatives.minimalPackaging.title,
-      carbonReduction: products.alternatives.minimalPackaging.averageReduction,
+      carbonReduction: Math.round(packagingReduction * 1000) / 1000,
       description: products.alternatives.minimalPackaging.description,
       priceDiff: '-10%',
       australianContext: 'Compliant with Australian Packaging Covenant',
@@ -242,7 +261,7 @@ function findEcoAlternatives(products, carbonFootprint) {
     },
     {
       name: products.alternatives.plantBased.title,
-      carbonReduction: products.alternatives.plantBased.averageReduction,
+      carbonReduction: Math.round(plantReduction * 1000) / 1000,
       description: products.alternatives.plantBased.description,
       priceDiff: '+8%',
       australianContext: 'Rapid growth in Australian plant-based products',

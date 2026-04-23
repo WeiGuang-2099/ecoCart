@@ -140,32 +140,12 @@ class LocalAlternativesMap {
     };
   }
 
-  // Get user location (with privacy compliance)
+  // Get user location -- NOTE: geolocation must be obtained client-side.
+  // The frontend should pass { lat, lng } to the API; this method is not
+  // usable on the server because navigator.geolocation is a browser-only API.
+  // Kept as a placeholder that throws so callers know to provide coordinates.
   async getUserLocation() {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation not supported'));
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy
-          });
-        },
-        (error) => {
-          reject(error);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // 5 minutes cache
-        }
-      );
-    });
+    throw new Error('Geolocation must be obtained client-side. Pass lat/lng from the browser.');
   }
 
   // Find nearest Australian city
@@ -278,50 +258,29 @@ class LocalAlternativesMap {
 
   // Generate map HTML
   generateMapHTML(center, stores, userLocation) {
+    const safe = (v) => typeof v === 'number' ? v : 0;
+    const safeStr = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const storeMarkers = stores.map(store =>
+      `new google.maps.Marker({ position: { lat: ${safe(store.lat)}, lng: ${safe(store.lng)} }, map: map, title: ${JSON.stringify(String(store.name || ''))}, icon: { url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2327ae60'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z'/%3E%3C/svg%3E", scaledSize: new google.maps.Size(32, 32) } });`
+    ).join('\n          ');
+
     return `
       <div id="eco-map" style="height: 400px; width: 100%; border-radius: 10px;"></div>
       <script>
         function initEcoMap() {
-          const mapCenter = { lat: ${center.lat}, lng: ${center.lng} };
+          const mapCenter = { lat: ${safe(center.lat)}, lng: ${safe(center.lng)} };
           const map = new google.maps.Map(document.getElementById('eco-map'), {
             zoom: 12,
             center: mapCenter,
-            styles: [
-              {
-                featureType: "poi",
-                elementType: "labels",
-                stylers: [{ visibility: "off" }]
-              }
-            ]
+            styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }]
           });
-
-          // Add user location marker
-          const userMarker = new google.maps.Marker({
-            position: { lat: ${userLocation.lat}, lng: ${userLocation.lng} },
-            map: map,
-            title: "Your location",
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: "#4285F4",
-              fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 2
-            }
+          new google.maps.Marker({
+            position: { lat: ${safe(userLocation.lat)}, lng: ${safe(userLocation.lng)} },
+            map: map, title: "Your location",
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2 }
           });
-
-          // Add eco store markers
-          ${stores.map(store => `
-            new google.maps.Marker({
-              position: { lat: ${store.lat}, lng: ${store.lng} },
-              map: map,
-              title: "${store.name}",
-              icon: {
-                url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2327ae60'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z'/%3E%3C/svg%3E",
-                scaledSize: new google.maps.Size(32, 32)
-              }
-            });
-          `).join('')}
+          ${storeMarkers}
         }
       </script>
       <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initEcoMap"></script>
