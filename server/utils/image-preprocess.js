@@ -1,7 +1,20 @@
 'use strict';
 
-const sharp = require('sharp');
-const ort = require('onnxruntime-node');
+let _sharp = null;
+function getSharp() {
+  if (!_sharp) {
+    _sharp = require('sharp');
+  }
+  return _sharp;
+}
+
+let _ort = null;
+function getOrt() {
+  if (!_ort) {
+    _ort = require('onnxruntime-node');
+  }
+  return _ort;
+}
 
 const MODEL_SIZE = 640;
 const PAD_GRAY = 128;
@@ -24,7 +37,7 @@ const PAD_GRAY = 128;
  */
 async function prepareForYolo(imageBuffer) {
   // 1. Get original dimensions
-  const metadata = await sharp(imageBuffer).metadata();
+  const metadata = await getSharp()(imageBuffer).metadata();
   const origWidth = metadata.width;
   const origHeight = metadata.height;
 
@@ -43,7 +56,7 @@ async function prepareForYolo(imageBuffer) {
   const resizedHeight = Math.round(origHeight * scale);
 
   // 3. Resize the image to fit within 640x640, maintaining aspect ratio
-  const resizedBuffer = await sharp(imageBuffer)
+  const resizedBuffer = await getSharp()(imageBuffer)
     .resize(resizedWidth, resizedHeight, { fit: 'inside' })
     .removeAlpha()
     .raw()
@@ -77,7 +90,7 @@ async function prepareForYolo(imageBuffer) {
   }
 
   // 6. Create ort.Tensor with dims [1, 3, 640, 640]
-  const tensor = new ort.Tensor('float32', nchw, [1, 3, MODEL_SIZE, MODEL_SIZE]);
+  const tensor = new (getOrt().Tensor)('float32', nchw, [1, 3, MODEL_SIZE, MODEL_SIZE]);
 
   return {
     tensor,
@@ -100,7 +113,7 @@ async function prepareForYolo(imageBuffer) {
  * @returns {Promise<{ base64: string, width: number, height: number }>}
  */
 async function cropRegion(imageBuffer, bbox, paddingFraction = 0.2) {
-  const metadata = await sharp(imageBuffer).metadata();
+  const metadata = await getSharp()(imageBuffer).metadata();
   const imgWidth = metadata.width;
   const imgHeight = metadata.height;
 
@@ -116,7 +129,7 @@ async function cropRegion(imageBuffer, bbox, paddingFraction = 0.2) {
   const cropWidth = right - left;
   const cropHeight = bottom - top;
 
-  const croppedBuffer = await sharp(imageBuffer)
+  const croppedBuffer = await getSharp()(imageBuffer)
     .extract({ left, top, width: cropWidth, height: cropHeight })
     .png()
     .toBuffer();
