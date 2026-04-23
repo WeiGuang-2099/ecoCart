@@ -10,8 +10,8 @@ module.exports = [
       '.git/**',
       'coverage/**',
       '*.min.js',
-      'data/*.json'
-    ]
+      'data/*.json',
+    ],
   },
   {
     files: ['**/*.js'],
@@ -34,11 +34,11 @@ module.exports = [
         document: 'readonly',
         navigator: 'readonly',
         fetch: 'readonly',
-        URL: 'readonly'
-      }
+        URL: 'readonly',
+      },
     },
     plugins: {
-      prettier: eslintPluginPrettier
+      prettier: eslintPluginPrettier,
     },
     rules: {
       ...eslintConfigPrettier.rules,
@@ -46,9 +46,12 @@ module.exports = [
       'no-console': 'off',
       'prefer-const': 'warn',
       'no-var': 'warn',
-      'prettier/prettier': ['error', {
-        endOfLine: 'auto'
-      }]
-    }
-  }
+      'prettier/prettier': [
+        'error',
+        {
+          endOfLine: 'auto',
+        },
+      ],
+    },
+  },
 ];
