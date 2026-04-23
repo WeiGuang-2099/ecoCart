@@ -41,11 +41,137 @@ export default function BarcodeScanner() {
     });
   }
 
-  async function decodeBarcode(file) {
+  // Convert a File/Blob to an HTMLCanvasElement
+  async function canvasFromFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Produce 4 preprocessed canvas variants for improved barcode recognition
+  function preprocessImage(sourceCanvas) {
+    const w = sourceCanvas.width;
+    const h = sourceCanvas.height;
+    const srcCtx = sourceCanvas.getContext('2d');
+    const srcData = srcCtx.getImageData(0, 0, w, h);
+    const variants = [];
+
+    // Variant 0: Original (no extra processing)
+    const origCanvas = document.createElement('canvas');
+    origCanvas.width = w;
+    origCanvas.height = h;
+    origCanvas.getContext('2d').drawImage(sourceCanvas, 0, 0);
+    variants.push(origCanvas);
+
+    // Helper: extract grayscale array from RGBA ImageData
+    function toGrayscale(imgData) {
+      const pixels = imgData.data;
+      const gray = new Uint8Array(w * h);
+      for (let i = 0; i < w * h; i++) {
+        const idx = i * 4;
+        gray[i] = Math.round(0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
+      }
+      return gray;
+    }
+
+    // Helper: write grayscale array into a new canvas
+    function grayToCanvas(gray) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.createImageData(w, h);
+      const d = imgData.data;
+      for (let i = 0; i < w * h; i++) {
+        const idx = i * 4;
+        d[idx] = d[idx + 1] = d[idx + 2] = gray[i];
+        d[idx + 3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+      return canvas;
+    }
+
+    const gray = toGrayscale(srcData);
+
+    // Variant 1: Grayscale + Contrast (linear stretch factor 1.5)
+    {
+      const contrast = new Uint8Array(w * h);
+      for (let i = 0; i < w * h; i++) {
+        let v = gray[i];
+        v = Math.round((v - 128) * 1.5 + 128);
+        contrast[i] = Math.max(0, Math.min(255, v));
+      }
+      variants.push(grayToCanvas(contrast));
+    }
+
+    // Variant 2: Adaptive Binarization (15x15 block, threshold = localMean - 10)
+    {
+      const bin = new Uint8Array(w * h);
+      const halfSize = 7; // (15-1)/2
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let sum = 0;
+          let count = 0;
+          for (let dy = -halfSize; dy <= halfSize; dy++) {
+            for (let dx = -halfSize; dx <= halfSize; dx++) {
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                sum += gray[ny * w + nx];
+                count++;
+              }
+            }
+          }
+          const mean = sum / count;
+          bin[y * w + x] = gray[y * w + x] < (mean - 10) ? 0 : 255;
+        }
+      }
+      variants.push(grayToCanvas(bin));
+    }
+
+    // Variant 3: Sharpen (3x3 unsharp mask: center=5, cardinal=-1, corners=0)
+    {
+      const sharp = new Uint8Array(w * h);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let val = gray[y * w + x] * 5;
+          // Cardinal neighbors with edge clamping
+          const top    = y > 0        ? gray[(y - 1) * w + x] : gray[y * w + x];
+          const bottom = y < h - 1    ? gray[(y + 1) * w + x] : gray[y * w + x];
+          const left   = x > 0        ? gray[y * w + (x - 1)] : gray[y * w + x];
+          const right  = x < w - 1    ? gray[y * w + (x + 1)] : gray[y * w + x];
+          val -= top + bottom + left + right;
+          sharp[y * w + x] = Math.max(0, Math.min(255, val));
+        }
+      }
+      variants.push(grayToCanvas(sharp));
+    }
+
+    return variants;
+  }
+
+  // Try to decode a barcode from a single canvas using BarcodeDetector then ZXing
+  async function tryDecodeFromCanvas(canvas) {
     // Try native BarcodeDetector
     if ('BarcodeDetector' in window) {
       const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] });
-      const img = await createImageBitmap(file);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      const img = await createImageBitmap(blob);
       try {
         const results = await detector.detect(img);
         if (results.length > 0) {
@@ -56,15 +182,32 @@ export default function BarcodeScanner() {
       img.close();
     }
 
-    // Fallback: ZXing
+    // Fallback: ZXing via data URL
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/library');
       const reader = new BrowserMultiFormatReader();
-      const url = URL.createObjectURL(file);
-      const result = await reader.decodeFromImageUrl(url);
-      URL.revokeObjectURL(url);
+      const dataUrl = canvas.toDataURL('image/png');
+      const result = await reader.decodeFromImageUrl(dataUrl);
       return { code: result.getText(), method: 'ZXing-WASM', confidence: 0.95 };
     } catch {}
+
+    return null;
+  }
+
+  async function decodeBarcode(file) {
+    setStatus('Decoding barcode...');
+    const compressed = await compressImage(file);
+    const canvas = await canvasFromFile(compressed);
+    const variants = preprocessImage(canvas);
+
+    for (let i = 0; i < variants.length; i++) {
+      if (i > 0) setStatus('Enhancing image...');
+      const result = await tryDecodeFromCanvas(variants[i]);
+      if (result) {
+        setStatus(`Barcode found: ${result.code}`);
+        return result;
+      }
+    }
 
     throw new Error('Unable to read barcode from image');
   }
@@ -80,9 +223,7 @@ export default function BarcodeScanner() {
     setStatus('Decoding barcode...');
 
     try {
-      const compressed = await compressImage(file);
-      const decoded = await decodeBarcode(compressed);
-      setStatus(`Barcode found: ${decoded.code}`);
+      const decoded = await decodeBarcode(file);
 
       // Call backend API
       setStatus('Fetching product data...');
