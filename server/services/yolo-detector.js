@@ -1,8 +1,15 @@
 'use strict';
 
-const ort = require('onnxruntime-node');
 const path = require('path');
 const fs = require('fs');
+
+let _ort = null;
+function getOrt() {
+  if (!_ort) {
+    _ort = require('onnxruntime-node');
+  }
+  return _ort;
+}
 
 // --- Configuration ---
 const MODEL_PATH = path.join(__dirname, '../../models/yolov8n.onnx');
@@ -88,7 +95,7 @@ class YoloDetector {
       );
     }
 
-    return ort.InferenceSession.create(MODEL_PATH, {
+    return getOrt().InferenceSession.create(MODEL_PATH, {
       executionProviders: ['cpu']
     });
   }
