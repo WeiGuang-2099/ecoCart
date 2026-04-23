@@ -238,10 +238,13 @@ export default function BarcodeScanner() {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
         const img = await createImageBitmap(blob);
-        const results = await detector.detect(img);
-        img.close();
-        if (results.length > 0) {
-          return { code: results[0].rawValue, method: 'YOLO-BarcodeDetector', confidence: 0.90 };
+        try {
+          const results = await detector.detect(img);
+          if (results.length > 0) {
+            return { code: results[0].rawValue, method: 'YOLO-BarcodeDetector', confidence: 0.90 };
+          }
+        } finally {
+          img.close();
         }
       } catch (e) {
         console.debug('[BarcodeScanner] region decode failed:', e.message);

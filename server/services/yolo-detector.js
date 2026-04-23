@@ -152,7 +152,7 @@ class YoloDetector {
   /**
    * Post-process YOLOv8 raw output into filtered detections.
    *
-   * YOLOv8 output shape: (1, 84, 8400)
+   * YOLOv8 output shape: (1, 84, N) where N is the number of predictions
    *   - Rows 0-3: cx, cy, w, h in 640x640 space
    *   - Rows 4-83: class scores (80 COCO classes)
    *
@@ -162,9 +162,22 @@ class YoloDetector {
    */
   _postprocess(outputTensor, imageData) {
     const data = outputTensor.data;
-    // Shape is [1, 84, 8400]
+    const dims = outputTensor.dims;
+
+    // Validate output tensor shape: expected [1, 84, N] where N > 0
+    if (
+      !dims || dims.length !== 3 ||
+      dims[0] !== 1 || dims[1] !== 84 || dims[2] <= 0
+    ) {
+      console.warn(
+        `[yolo-detector] Unexpected output tensor shape: ${dims ? JSON.stringify(dims) : 'undefined'}. ` +
+        'Expected [1, 84, N] where N > 0. Returning empty detections.'
+      );
+      return [];
+    }
+
     const numClasses = 80;
-    const numPredictions = data.length / (4 + numClasses); // 8400
+    const numPredictions = dims[2]; // Derive from actual dims, not hardcoded
 
     // Step a: Collect all valid detections
     const candidates = [];

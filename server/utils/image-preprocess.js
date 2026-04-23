@@ -28,6 +28,14 @@ async function prepareForYolo(imageBuffer) {
   const origWidth = metadata.width;
   const origHeight = metadata.height;
 
+  // Validate image dimensions to prevent NaN scale calculations and OOM from huge images
+  if (!origWidth || !origHeight || origWidth < 10 || origHeight < 10) {
+    throw new Error(`Image dimensions too small (${origWidth}x${origHeight}). Minimum is 10x10.`);
+  }
+  if (origWidth > 8000 || origHeight > 8000) {
+    throw new Error(`Image dimensions too large (${origWidth}x${origHeight}). Maximum is 8000x8000.`);
+  }
+
   // 2. Compute resize scale and new dimensions
   const longestSide = Math.max(origWidth, origHeight);
   const scale = MODEL_SIZE / longestSide;
@@ -162,25 +170,40 @@ function computeIoU(a, b) {
 function extractBarcodeRegions(detections, origWidth, origHeight) {
   const candidates = [];
 
+  // Named constants for barcode region heuristic
+  const BOTTOM_FRACTION = 0.3;           // Bottom 30% of detection
+  const WIDE_STRIP_FRACTION = 0.15;      // Wider bottom strip
+  const MIN_REGION_HEIGHT_FRACTION = 0.1; // Minimum 10% of detection height
+
   for (const det of detections) {
-    // Bottom 30% of the product bounding box
-    const bottomRegionHeight = Math.round(det.h * 0.3);
+    const dx = det.bbox.x;
+    const dy = det.bbox.y;
+    const dw = det.bbox.w;
+    const dh = det.bbox.h;
+
+    // Skip detections where the barcode region would be too small to be useful
+    if (dh * MIN_REGION_HEIGHT_FRACTION < 1) {
+      continue;
+    }
+
+    // Bottom portion of the product bounding box
+    const bottomRegionHeight = Math.round(dh * BOTTOM_FRACTION);
     candidates.push({
-      x: det.x,
-      y: det.y + det.h - bottomRegionHeight,
-      w: det.w,
+      x: dx,
+      y: dy + dh - bottomRegionHeight,
+      w: dw,
       h: bottomRegionHeight
     });
 
-    // Wider bottom region: full width of product, bottom 15%, extended
+    // Wider bottom region: full width of product, bottom strip, extended
     // slightly wider than the original detection to catch barcodes at edges
-    const widerPad = Math.round(det.w * 0.1);
-    const widerX = Math.max(0, det.x - widerPad);
-    const widerW = Math.min(origWidth, det.x + det.w + widerPad) - widerX;
-    const widerRegionHeight = Math.round(det.h * 0.15);
+    const widerPad = Math.round(dw * 0.1);
+    const widerX = Math.max(0, dx - widerPad);
+    const widerW = Math.min(origWidth, dx + dw + widerPad) - widerX;
+    const widerRegionHeight = Math.round(dh * WIDE_STRIP_FRACTION);
     candidates.push({
       x: widerX,
-      y: det.y + det.h - widerRegionHeight,
+      y: dy + dh - widerRegionHeight,
       w: widerW,
       h: widerRegionHeight
     });

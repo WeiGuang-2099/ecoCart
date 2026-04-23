@@ -62,6 +62,9 @@ uploads/
 .eslintcache
 .parcel-cache/
 
+# YOLO model files (large binaries)
+models/*.onnx
+
 # Optional npm cache directory
 .npm
 
