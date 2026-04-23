@@ -210,20 +210,10 @@ export default function BarcodeScanner() {
     return null;
   }
 
-  async function decodeBarcode(file) {
+  async function decodeBarcode(file, detector) {
     setStatus('Decoding barcode...');
     const { canvas } = await compressImage(file);
     const variants = preprocessImage(canvas);
-
-    // Create BarcodeDetector once, reuse across all variants
-    let detector = null;
-    try {
-      if ('BarcodeDetector' in window) {
-        detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] });
-      }
-    } catch (e) {
-      console.debug('[BarcodeScanner] BarcodeDetector init failed:', e.message);
-    }
 
     for (let i = 0; i < variants.length; i++) {
       if (i > 0) setStatus('Enhancing image...');
@@ -237,6 +227,67 @@ export default function BarcodeScanner() {
     throw new Error('Unable to read barcode from image');
   }
 
+  // Try to decode a barcode from a base64-encoded PNG image
+  // Used when the server YOLO pipeline provides cropped barcode regions
+  async function tryDecodeFromBase64(base64String, detector) {
+    const dataUrl = `data:image/png;base64,${base64String}`;
+
+    // Try BarcodeDetector
+    if (detector) {
+      try {
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const img = await createImageBitmap(blob);
+        const results = await detector.detect(img);
+        img.close();
+        if (results.length > 0) {
+          return { code: results[0].rawValue, method: 'YOLO-BarcodeDetector', confidence: 0.90 };
+        }
+      } catch (e) {
+        console.debug('[BarcodeScanner] region decode failed:', e.message);
+      }
+    }
+
+    // Try ZXing
+    try {
+      const { BrowserMultiFormatReader } = await import('@zxing/library');
+      const reader = new BrowserMultiFormatReader();
+      const result = await reader.decodeFromImageUrl(dataUrl);
+      return { code: result.getText(), method: 'YOLO-ZXing', confidence: 0.85 };
+    } catch (e) {
+      console.debug('[BarcodeScanner] region ZXing decode failed:', e.message);
+    }
+
+    return null;
+  }
+
+  // Fire-and-forget YOLO enrichment after a successful client-side decode.
+  // Merges YOLO detection data into the scan results already shown to the user.
+  function yoloEnrichSuccess(file, scanData) {
+    (async () => {
+      try {
+        setStatus('Analyzing product category...');
+        const formData = new FormData();
+        formData.append('image', file); // original file, not compressed
+
+        const yoloRes = await fetch('/api/scan-barcode', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (yoloRes.ok) {
+          const yoloData = await yoloRes.json();
+          if (yoloData.yoloDetection) {
+            scanData.yoloDetection = yoloData.yoloDetection;
+          }
+        }
+      } catch (e) {
+        console.debug('[BarcodeScanner] YOLO enrichment failed:', e.message);
+        // Non-critical, do not fail the scan
+      }
+    })();
+  }
+
   async function handleFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
 
@@ -247,30 +298,116 @@ export default function BarcodeScanner() {
     setScanning(true);
     setStatus('Decoding barcode...');
 
+    // Create BarcodeDetector once for reuse in client decode and YOLO region decode
+    let sharedDetector = null;
     try {
-      const decoded = await decodeBarcode(file);
+      if ('BarcodeDetector' in window) {
+        sharedDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] });
+      }
+    } catch (e) {
+      console.debug('[BarcodeScanner] BarcodeDetector init failed:', e.message);
+    }
 
-      // Call backend API
-      setStatus('Fetching product data...');
-      const res = await fetch('/api/lookup-barcode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ barcode: decoded.code, detectionMethod: decoded.method })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Server error');
+    try {
+      // Step 1: Try client-side decoding (existing fast path)
+      let decoded = null;
+      try {
+        decoded = await decodeBarcode(file, sharedDetector);
+      } catch (decodeErr) {
+        // Client decode failed, will try YOLO fallback below
       }
 
-      const data = await res.json();
-      // Merge client detection info without overwriting server-computed confidence
-      data.barcode = {
-        ...data.barcode,
-        detectionMethod: decoded.method,
-        clientConfidence: decoded.confidence
-      };
-      navigate('/results', { state: { scanData: data } });
+      if (decoded) {
+        // Client decode succeeded -- look up barcode, navigate, then enrich with YOLO
+        setStatus('Fetching product data...');
+        const res = await fetch('/api/lookup-barcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barcode: decoded.code, detectionMethod: decoded.method })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Server error');
+        }
+
+        const data = await res.json();
+        // Merge client detection info without overwriting server-computed confidence
+        data.barcode = {
+          ...data.barcode,
+          detectionMethod: decoded.method,
+          clientConfidence: decoded.confidence
+        };
+
+        // Navigate immediately, then fire-and-forget YOLO enrichment
+        navigate('/results', { state: { scanData: data } });
+        yoloEnrichSuccess(file, data);
+        return;
+      }
+
+      // Step 2: Client decode failed -- try server YOLO fallback (blocking)
+      setStatus('Analyzing with AI...');
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const yoloRes = await fetch('/api/scan-barcode', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (yoloRes.ok) {
+        const yoloData = await yoloRes.json();
+        let barcodeFound = false;
+
+        // Try decoding barcode from YOLO-provided regions
+        if (yoloData.barcodeRegions && yoloData.barcodeRegions.length > 0) {
+          for (const region of yoloData.barcodeRegions) {
+            const regionResult = await tryDecodeFromBase64(region.base64, sharedDetector);
+            if (regionResult) {
+              setStatus(`AI-enhanced barcode found: ${regionResult.code}`);
+
+              // Use existing lookup logic with the decoded barcode
+              const lookupRes = await fetch('/api/lookup-barcode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ barcode: regionResult.code, detectionMethod: regionResult.method })
+              });
+
+              if (lookupRes.ok) {
+                const lookupData = await lookupRes.json();
+                lookupData.barcode = {
+                  ...lookupData.barcode,
+                  detectionMethod: regionResult.method,
+                  clientConfidence: regionResult.confidence
+                };
+                if (yoloData.yoloDetection) {
+                  lookupData.yoloDetection = yoloData.yoloDetection;
+                }
+                navigate('/results', { state: { scanData: lookupData } });
+                barcodeFound = true;
+                break;
+              }
+            }
+          }
+        }
+
+        // If still no barcode but YOLO found a category, show that info
+        if (yoloData.yoloDetection && !barcodeFound) {
+          setStatus(
+            `Product detected: ${yoloData.yoloDetection.category} ` +
+            `(${Math.round(yoloData.yoloDetection.confidence * 100)}% confidence). ` +
+            `Enter barcode manually.`
+          );
+          return;
+        }
+
+        if (barcodeFound) {
+          return;
+        }
+      }
+
+      // Nothing worked
+      setStatus('Unable to read barcode from image. Try a clearer photo.');
     } catch (err) {
       setStatus(err.message || 'Scan failed');
     } finally {
