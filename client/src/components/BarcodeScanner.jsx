@@ -212,13 +212,18 @@ export default function BarcodeScanner() {
 
   async function decodeBarcode(file) {
     setStatus('Decoding barcode...');
-    const { file: compressedFile, canvas } = await compressImage(file);
+    const { canvas } = await compressImage(file);
     const variants = preprocessImage(canvas);
 
     // Create BarcodeDetector once, reuse across all variants
-    const detector = 'BarcodeDetector' in window
-      ? new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] })
-      : null;
+    let detector = null;
+    try {
+      if ('BarcodeDetector' in window) {
+        detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] });
+      }
+    } catch (e) {
+      console.debug('[BarcodeScanner] BarcodeDetector init failed:', e.message);
+    }
 
     for (let i = 0; i < variants.length; i++) {
       if (i > 0) setStatus('Enhancing image...');
