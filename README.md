@@ -31,10 +31,12 @@ The backend follows a layered architecture with dependency injection. Route hand
 - **Barcode scanning** -- Multi-pass client-side decoding with 4 image preprocessing variants (grayscale+contrast, adaptive binarization, sharpening); server-side YOLOv8n fallback for difficult images
 - **Product recognition** -- YOLOv8n object detection (ONNX Runtime) identifies product categories from photos; locates barcode regions for targeted decoding
 - **Carbon footprint estimation** -- Production, transport, and packaging emissions based on per-category emission factors and configurable transport modes
-- **ACCC greenwashing detection** -- Flags vague or certification-required sustainability claims
-- **Open Food Facts integration** -- Enriches product data from the global open database
-- **Local eco alternatives** -- Nearby refill, organic, and zero-waste stores with comparison metrics
-- **PWA support** -- Installable, works offline with cached assets
+- **Eco alternatives** -- Recommends local produce, organic options, minimal packaging, and plant-based alternatives with per-item CO2 savings and price comparison
+- **ACCC greenwashing detection** -- Flags vague or certification-required sustainability claims with risk-level assessment
+- **Nearby eco store map** -- Leaflet-based interactive map showing nearby refill, organic, and zero-waste stores with distance data
+- **Open Food Facts integration** -- Enriches product data from the global open database, including product images
+- **Scan history** -- localStorage-backed history with total CO2 savings tracker
+- **PWA support** -- Installable, offline-capable with Workbox runtime caching for API and OFF responses
 - **Internationalization** -- English and Chinese UI via i18next
 - **Privacy-first** -- In-memory-only image processing, zero data retention, Privacy Act 1988 compliant
 - **Graceful degradation** -- Four-level fallback: client decode -> YOLO region decode -> YOLO category only -> manual entry prompt
@@ -44,7 +46,7 @@ The backend follows a layered architecture with dependency injection. Route hand
 | Layer      | Technologies                                                       |
 |------------|--------------------------------------------------------------------|
 | Backend    | Node.js 18+, Express 4, ONNX Runtime, Sharp, Multer, Helmet       |
-| Frontend   | React 19, Vite 8, Chart.js, ZXing, Canvas preprocessing           |
+| Frontend   | React 19, Vite 8, Chart.js, Leaflet, ZXing, Canvas preprocessing  |
 | Data       | 1 220+ Australian products, Open Food Facts API                    |
 | DevOps     | Docker, GitHub Actions CI, ESLint, Prettier, Jest                  |
 
