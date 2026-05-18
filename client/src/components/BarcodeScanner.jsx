@@ -343,7 +343,7 @@ export default function BarcodeScanner() {
         };
 
         // Navigate immediately, then fire-and-forget YOLO enrichment
-        navigate('/results', { state: { scanData: data } });
+        navigate(`/results?barcode=${encodeURIComponent(decoded.code)}`, { state: { scanData: data } });
         yoloEnrichSuccess(file, data);
         return;
       }
@@ -386,7 +386,7 @@ export default function BarcodeScanner() {
                 if (yoloData.yoloDetection) {
                   lookupData.yoloDetection = yoloData.yoloDetection;
                 }
-                navigate('/results', { state: { scanData: lookupData } });
+                navigate(`/results?barcode=${encodeURIComponent(regionResult.code)}`, { state: { scanData: lookupData } });
                 barcodeFound = true;
                 break;
               }

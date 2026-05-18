@@ -40,7 +40,9 @@ function buildCarbonFootprint(product, deps) {
     categoryCode,
     deps.emissionFactorMap
   );
-  const distanceKm = resolveDistance(profile, product);
+  const rawDistanceKm = resolveDistance(profile, product);
+  const distanceEstimated = rawDistanceKm === null;
+  const distanceKm = distanceEstimated ? 1000 : rawDistanceKm;
   const transportMethod = normalizeTransportMethod(profile.transport_method);
   const transportFactor = deps.transportFactors[transportMethod] || deps.transportFactors.road_truck;
   const adjustmentFactor = profile.is_fresh_food && transportMethod === 'air' ? 5.5 : 1.0;
@@ -73,7 +75,8 @@ function buildCarbonFootprint(product, deps) {
     production_method: profile.production_method,
     packaging: profile.packaging,
     is_fresh_food: !!profile.is_fresh_food,
-    confidence: 'high',
+    confidence: distanceEstimated ? 'medium' : 'high',
+    distance_estimated: distanceEstimated,
     source: 'afsis-mapped + anz-lca',
     region: originLocation.split('/')[0] || 'australia',
     certifications: product.certifications,

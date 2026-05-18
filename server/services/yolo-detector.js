@@ -121,13 +121,13 @@ class YoloDetector {
 
       return this._postprocess(output, imageData);
     } catch (err) {
-      // If the model failed to load, re-throw so the caller can report it
       if (err.message && err.message.includes('model file not found')) {
         throw err;
       }
-      // For inference failures, return empty array rather than crashing
       console.error('[yolo-detector] Inference error:', err.message);
-      return [];
+      const error = new Error('YOLO inference failed: ' + err.message);
+      error.code = 'YOLO_INFERENCE_ERROR';
+      throw error;
     }
   }
 

@@ -153,7 +153,7 @@ function resolveDistance(profile = {}, product = {}) {
   if (product.freightData && typeof product.freightData.distance_km === 'number') {
     return product.freightData.distance_km;
   }
-  return 0;
+  return null;
 }
 
 module.exports = {

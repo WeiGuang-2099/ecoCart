@@ -12,7 +12,7 @@ const DEFAULT_BASE_URL = 'https://world.openfoodfacts.org/api/v2';
 async function getProductByBarcode(barcode, options = {}) {
   const baseUrl = options.baseUrl || DEFAULT_BASE_URL;
   try {
-    const response = await axios.get(`${baseUrl}/product/${barcode}.json`, {
+    const response = await axios.get(`${baseUrl}/product/${encodeURIComponent(barcode)}.json`, {
       timeout: 8000,
       params: {
         fields: 'product_name,brands,countries,origins,ecoscore_grade,image_url,categories,quantity,categories_tags'
@@ -21,9 +21,9 @@ async function getProductByBarcode(barcode, options = {}) {
     return response.data;
   } catch (error) {
     if (error.response) {
-      return { status: error.response.status, error: 'Open Food Facts API request failed' };
+      return { status: error.response.status, error: 'Open Food Facts API request failed', errorType: 'api_error' };
     }
-    return { status: 0, error: error.message };
+    return { status: 0, error: error.message, errorType: 'network_error' };
   }
 }
 

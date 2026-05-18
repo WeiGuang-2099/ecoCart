@@ -1,9 +1,16 @@
-const { body } = require('express-validator');
+const { body, query } = require('express-validator');
 
 const barcodeValidation = [
   body('barcode').isString().trim().isLength({ min: 6, max: 18 })
     .withMessage('Barcode must be between 6 and 18 characters'),
   body('detectionMethod').optional().isString().trim()
+];
+
+const barcodeQueryValidation = [
+  query('barcode').isString().trim().isLength({ min: 6, max: 18 })
+    .withMessage('Barcode must be between 6 and 18 characters')
+    .matches(/^[A-Za-z0-9]+$/)
+    .withMessage('Barcode must contain only alphanumeric characters')
 ];
 
 const localAlternativesValidation = [
@@ -14,4 +21,4 @@ const localAlternativesValidation = [
     .withMessage('Longitude must be between -180 and 180')
 ];
 
-module.exports = { barcodeValidation, localAlternativesValidation };
+module.exports = { barcodeValidation, barcodeQueryValidation, localAlternativesValidation };

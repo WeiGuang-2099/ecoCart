@@ -1,17 +1,29 @@
-import { useLocation, Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useLocation, Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import AcccBadge from '../components/AcccBadge';
 import AlternativeCard from '../components/AlternativeCard';
 import CarbonChart from '../components/CarbonChart';
 import EmissionComparison from '../components/EmissionComparison';
 import EcoStoreMap from '../components/EcoStoreMap';
-import { addScanRecord } from '../utils/storage';
+import { addScanRecord, getLatestScanByBarcode } from '../utils/storage';
 
 export default function Results() {
   const location = useLocation();
-  const data = location.state?.scanData;
+  const [searchParams] = useSearchParams();
+  const routeData = location.state?.scanData;
   const { t } = useTranslation();
+
+  // Fall back to localStorage cache when page is refreshed
+  const data = useMemo(() => {
+    if (routeData) return routeData;
+    const barcode = searchParams.get('barcode');
+    if (barcode) return getLatestScanByBarcode(barcode);
+    return null;
+  }, [routeData, searchParams]);
+
+  const [ecoStores, setEcoStores] = useState(null);
+  const [userLoc, setUserLoc] = useState(null);
 
   useEffect(() => {
     if (data && data.barcode?.code) {
@@ -19,25 +31,14 @@ export default function Results() {
     }
   }, [data]);
 
-  if (!data) {
-    return (
-      <div className="results-empty">
-        <h2>{t('results.noData')}</h2>
-        <p>{t('results.scanFirst')}</p>
-        <Link to="/" className="btn-primary">{t('results.goToScanner')}</Link>
-      </div>
-    );
-  }
-
-  const { barcode, carbonFootprint, alternatives, acccCompliance, governmentData, openFoodFacts } = data;
-  const productName = carbonFootprint?.productName || barcode?.code || 'Unknown product';
-  const productImage = openFoodFacts?.imageUrl || carbonFootprint?.image || null;
-
-  const [ecoStores, setEcoStores] = useState(null);
-  const [userLoc, setUserLoc] = useState(null);
-
   useEffect(() => {
-    const city = localStorage.getItem('ecocart_city') || 'Sydney';
+    if (!data) return;
+    const carbonFootprint = data.carbonFootprint;
+    let city = 'Sydney';
+    try {
+      const raw = localStorage.getItem('ecocart_settings');
+      if (raw) city = JSON.parse(raw).city || 'Sydney';
+    } catch {}
     const cityCoords = {
       Sydney: { lat: -33.8688, lng: 151.2093 },
       Melbourne: { lat: -37.8136, lng: 144.9631 },
@@ -62,7 +63,21 @@ export default function Results() {
       .then(r => r.json())
       .then(d => { if (d.nearbyStores) setEcoStores(d.nearbyStores); })
       .catch(() => {});
-  }, [carbonFootprint]);
+  }, [data]);
+
+  if (!data) {
+    return (
+      <div className="results-empty">
+        <h2>{t('results.noData')}</h2>
+        <p>{t('results.scanFirst')}</p>
+        <Link to="/" className="btn-primary">{t('results.goToScanner')}</Link>
+      </div>
+    );
+  }
+
+  const { barcode, carbonFootprint, alternatives, acccCompliance, governmentData, openFoodFacts, warnings } = data;
+  const productName = carbonFootprint?.productName || barcode?.code || 'Unknown product';
+  const productImage = openFoodFacts?.imageUrl || carbonFootprint?.image || null;
 
   return (
     <div className="results">
@@ -73,6 +88,17 @@ export default function Results() {
         <h2>{productName}</h2>
         {carbonFootprint?.brand && <p className="brand">by {carbonFootprint.brand}</p>}
       </section>
+
+      {(warnings?.length > 0 || carbonFootprint?.distance_estimated) && (
+        <div className="result-card warning-card">
+          {carbonFootprint?.distance_estimated && (
+            <p className="warning-text">Transport distance estimated (1000 km default). Actual emissions may vary.</p>
+          )}
+          {warnings?.map((w, i) => (
+            <p key={i} className="warning-text">[{w.source}] {w.message}</p>
+          ))}
+        </div>
+      )}
 
       <div className="results-grid">
         {/* Barcode info */}

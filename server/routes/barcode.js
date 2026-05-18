@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { validationResult } = require('express-validator');
-const { barcodeValidation } = require('../middleware/validation');
+const { barcodeValidation, barcodeQueryValidation } = require('../middleware/validation');
 
 const yoloDetector = require('../services/yolo-detector');
 const imagePreprocess = require('../utils/image-preprocess');
@@ -36,6 +36,7 @@ module.exports = function(deps) {
       const barcodeResult = { detected: false, code: null, confidence: 0 };
 
       // Step 2: Preprocess image for YOLO
+      const warnings = [];
       let yoloResults = [];
       let tensorMeta = null;
       try {
@@ -46,6 +47,7 @@ module.exports = function(deps) {
         yoloResults = await yoloDetector.detect(tensor, meta);
       } catch (e) {
         console.error('YOLO detection failed:', e.message);
+        warnings.push({ source: 'yolo', message: 'Object detection unavailable' });
       }
 
       // Step 4: Extract barcode candidate regions from detections
@@ -126,6 +128,7 @@ module.exports = function(deps) {
         alternatives: findEcoAlternatives(products, carbonFootprint),
         governmentData,
         acccCompliance,
+        warnings: warnings.length > 0 ? warnings : undefined,
         privacyCompliance: {
           dataRetention: '0-days',
           storagePolicy: 'memory-only',
@@ -171,21 +174,27 @@ module.exports = function(deps) {
       : carbonService.generateEstimatedProfile('medium', carbonDeps);
 
     // Open Food Facts enrichment
+    const warnings = [];
     let openFoodFacts = null;
     try {
       const offResult = await offService.getProductByBarcode(barcode);
-      const offInfo = offService.extractProductInfo(offResult);
-      if (offInfo) {
-        openFoodFacts = offInfo;
-        // If local product not found, use OFF data for name/brand/origin
-        if (!product) {
-          if (offInfo.productName) carbonFootprint.productName = offInfo.productName;
-          if (offInfo.brand) carbonFootprint.brand = offInfo.brand;
-          if (offInfo.origin) carbonFootprint.origin = offInfo.origin;
+      if (offResult.errorType) {
+        warnings.push({ source: 'open-food-facts', message: offResult.error });
+      } else {
+        const offInfo = offService.extractProductInfo(offResult);
+        if (offInfo) {
+          openFoodFacts = offInfo;
+          // If local product not found, use OFF data for name/brand/origin
+          if (!product) {
+            if (offInfo.productName) carbonFootprint.productName = offInfo.productName;
+            if (offInfo.brand) carbonFootprint.brand = offInfo.brand;
+            if (offInfo.origin) carbonFootprint.origin = offInfo.origin;
+          }
         }
       }
     } catch (err) {
       console.error('Open Food Facts lookup failed:', err.message);
+      warnings.push({ source: 'open-food-facts', message: 'External product database unavailable' });
     }
 
     const alternatives = findEcoAlternatives(products, carbonFootprint);
@@ -213,6 +222,7 @@ module.exports = function(deps) {
       governmentData,
       acccCompliance,
       openFoodFacts,
+      warnings: warnings.length > 0 ? warnings : undefined,
       privacyCompliance: {
         dataRetention: '0-days',
         storagePolicy: 'memory-only',
@@ -222,17 +232,14 @@ module.exports = function(deps) {
   }
 
   // GET /api/lookup-barcode
-  router.get('/api/lookup-barcode', async (req, res, next) => {
+  router.get('/api/lookup-barcode', barcodeQueryValidation, async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Validation failed', details: errors.array() });
+    }
     try {
-      const barcode = req.query.barcode;
-      if (!barcode || barcode.length < 6 || barcode.length > 18) {
-        return res.status(400).json({
-          error: 'Invalid barcode',
-          message: 'Barcode must be between 6 and 18 characters',
-          example: 'GET /api/lookup-barcode?barcode=930030000000'
-        });
-      }
-      const result = await handleBarcodeLookup(barcode.trim());
+      const barcode = req.query.barcode.trim();
+      const result = await handleBarcodeLookup(barcode);
       res.json(result);
     } catch (error) {
       next(error);

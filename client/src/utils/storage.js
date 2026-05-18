@@ -39,3 +39,9 @@ export function getTotalCarbonReduction() {
     return total + maxReduction;
   }, 0);
 }
+
+export function getLatestScanByBarcode(barcode) {
+  if (!barcode) return null;
+  const history = getScanHistory();
+  return history.find(r => r.barcode?.code === barcode) || null;
+}

@@ -65,7 +65,7 @@ function createApp() {
     credentials: true
   };
   app.use(cors(corsOptions));
-  app.use(express.json());
+  app.use(express.json({ limit: '10kb' }));
   app.use(express.static('public'));
 
   // Request logging (keep the privacy-compliant log from original)
@@ -89,7 +89,7 @@ function createApp() {
 
   // 404 handler
   app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found', path: req.path, method: req.method });
+    res.status(404).json({ error: 'Not found' });
   });
 
   // Error handler (must be last)

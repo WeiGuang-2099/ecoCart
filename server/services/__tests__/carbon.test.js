@@ -50,14 +50,15 @@ describe('buildCarbonFootprint', () => {
         product_category: 'dairy',
         origin_location: 'Australia/Victoria',
         weight_kg: 1,
+        distance_km: 500,
         transport_method: 'road_truck',
         is_fresh_food: false
       }
     };
     const result = buildCarbonFootprint(product, deps);
 
-    const expectedProduction = 1 * 3.2;                     // weight * factor
-    const expectedTransport = (1 / 1000) * 0 * 0.096 * 1.0; // weight/1000 * distance * factor * adjustment
+    const expectedProduction = 1 * 3.2;                        // weight * factor
+    const expectedTransport = (1 / 1000) * 500 * 0.096 * 1.0;  // weight/1000 * distance * factor * adjustment
     const expectedPackaging = 0.05;
     const expectedTotal = Math.round((expectedProduction + expectedTransport + expectedPackaging) * 1000) / 1000;
 
@@ -176,6 +177,7 @@ describe('buildCarbonFootprint', () => {
         product_category: 'dairy',
         origin_location: 'Australia/Victoria',
         weight_kg: 0.3,
+        distance_km: 200,
         transport_method: 'road_truck'
       }
     };
@@ -186,6 +188,7 @@ describe('buildCarbonFootprint', () => {
     expect(result.origin).toBe('Australia/Victoria');
     expect(result.category).toBe('dairy');
     expect(result.confidence).toBe('high');
+    expect(result.distance_estimated).toBe(false);
   });
 
   test('falls back to category defaults when profile fields are missing', () => {

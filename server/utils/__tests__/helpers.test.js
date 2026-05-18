@@ -359,11 +359,11 @@ describe('resolveDistance', () => {
     expect(resolveDistance(profile, product)).toBe(200);
   });
 
-  test('returns 0 when no distance info is available', () => {
-    expect(resolveDistance({}, {})).toBe(0);
+  test('returns null when no distance info is available', () => {
+    expect(resolveDistance({}, {})).toBeNull();
   });
 
-  test('returns 0 when no arguments', () => {
-    expect(resolveDistance()).toBe(0);
+  test('returns null when no arguments', () => {
+    expect(resolveDistance()).toBeNull();
   });
 });

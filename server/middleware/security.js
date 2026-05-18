@@ -22,6 +22,15 @@ function applySecurityMiddleware(app) {
     message: { error: 'Too many requests, please try again later' }
   });
 
+  const scanLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Scan rate limit exceeded. Please try again later.' }
+  });
+
+  app.use('/api/scan-barcode', scanLimiter);
   app.use('/api/', apiLimiter);
 
   // Privacy compliance headers

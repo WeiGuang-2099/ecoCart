@@ -10,8 +10,12 @@ function createErrorHandler(config) {
 
     const statusCode = err.statusCode || err.status || 500;
 
+    const safeMessage = config.nodeEnv === 'production'
+      ? 'Internal server error'
+      : (err.message || 'Internal server error');
+
     res.status(statusCode).json({
-      error: err.message || 'Internal server error',
+      error: safeMessage,
       ...(config.nodeEnv === 'development' && {
         stack: err.stack,
         details: err.details
